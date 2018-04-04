@@ -44,10 +44,12 @@
 #define DATA_LEVEL_1	0
 #define DATA_LEVEL_2	1
 #define DATA_LEVEL_3	10
-#define DATA_LEVEL_4	500
-#define DATA_LEVEL_5	1000
-#define DATA_LEVEL_6	2000
-#define DATA_LEVEL_7	3000
+#define DATA_LEVEL_4	100
+#define DATA_LEVEL_5	200
+#define DATA_LEVEL_6	300
+#define DATA_LEVEL_7	350
+
 #define NETWORK_TIMEOUT			5 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define NETWORK_CONTACTTIME		3
+
 #define LENGTH_CONTACT_LIST 40
