@@ -1,0 +1,20 @@
+
+V1.1
+- Disabled Simulation of Infection by Compiler Switch
+- Disabled Execution of functions from RAM by Compiler Switch
+- Updated Parameter defines:
+	- Limit RSSI to -60
+	- Base Sample Rate to 1 (Second)
+	- Network Timeout to 5
+	- Scan Interval 1000 ms
+	- Scan Window 300ms
+	- Advertising Intervall 250 ms
+- Changed identifier to "AOM"
+- Changed Data structure in network to adapt to no given ID List
+- Changed saved and transmitted time-counter to 3 Bytes resolution
+- Changed Advertising packet to omit infection data
+
+V1 
+- Split Network, Radio and Infection to separate translation units
+- Cleaned makefile of clean and cleanobj needed if PCA20006 and PCA10028 boards are compiled
+- Replaced evt handler in conn_params_init by NULL and setting disconnect_if_fail true
