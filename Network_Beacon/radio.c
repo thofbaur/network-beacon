@@ -296,8 +296,10 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             break; // BLE_EVT_USER_MEM_REQUEST
         case BLE_EVT_TX_COMPLETE:
         	nus_cnt--;
-
-        	all_sent = nus_push_data(&m_nus);
+        	if(nus_active)
+        	{
+        		all_sent = nus_push_data(&m_nus);
+        	}
         	if( all_sent)
         	{
         		if(nus_active)

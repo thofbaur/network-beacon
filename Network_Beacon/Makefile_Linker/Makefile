@@ -125,7 +125,7 @@ CFLAGS += -mfloat-abi=soft
 # keep every function in separate section. This will allow linker to dump unused functions
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin --short-enums 
-CFLAGS += -fstack-usage
+#CFLAGS += -fstack-usage
 
 
 # keep every function in separate section. This will allow linker to dump unused functions
