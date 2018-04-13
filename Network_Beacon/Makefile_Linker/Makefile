@@ -186,6 +186,7 @@ LINKER_SCRIPT= ble_app_seuchen_gcc_nrf51.ld
 
 
 nrf51822_xxac_s130: OUTPUT_FILENAME := nrf51822_xxac_s130
+nrf51822_xxac_s130:LINKER_SCRIPT= ble_app_seuchen_gcc_nrf51_xxac.ld
 nrf51822_xxac_s130: CFLAGS += -DBOARD_PCA20006
 nrf51822_xxac_s130: ASMFLAGS += -DBOARD_PCA20006
 nrf51822_xxac_s130: CFLAGS += -DNRF51822
@@ -196,7 +197,21 @@ nrf51822_xxac_s130:  $(BUILD_DIRECTORIES) $(OBJECTS)
 	$(NO_ECHO)$(MAKE) -f $(MAKEFILE_NAME) -C $(MAKEFILE_DIR) -e finalize
 
 
+
+nrf51822_xxaa_s130: OUTPUT_FILENAME := nrf51822_xxaa_s130
+nrf51822_xxaa_s130:LINKER_SCRIPT= ble_app_seuchen_gcc_nrf51_xxaa.ld
+nrf51822_xxaa_s130: CFLAGS += -DBOARD_PCA20006
+nrf51822_xxaa_s130: ASMFLAGS += -DBOARD_PCA20006
+nrf51822_xxaa_s130: CFLAGS += -DNRF51822
+nrf51822_xxaa_s130: ASMFLAGS += -DNRF51822
+nrf51822_xxaa_s130:  $(BUILD_DIRECTORIES) $(OBJECTS)
+	@echo Linking target: $(OUTPUT_FILENAME).out
+	$(NO_ECHO)$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -lm -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).out
+	$(NO_ECHO)$(MAKE) -f $(MAKEFILE_NAME) -C $(MAKEFILE_DIR) -e finalize
+
 nrf51422_xxac_s130: OUTPUT_FILENAME := nrf51422_xxac_s130
+nrf51822_xxac_s130:LINKER_SCRIPT= ble_app_seuchen_gcc_nrf51_xxac.ld
+
 nrf51422_xxac_s130: CFLAGS += -DBOARD_PCA10028
 nrf51422_xxac_s130: ASMFLAGS += -DBOARD_PCA10028
 nrf51422_xxac_s130: CFLAGS += -DNRF51422

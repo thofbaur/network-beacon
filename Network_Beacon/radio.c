@@ -49,7 +49,7 @@ void advertising_init(void)
 {
     uint32_t err_code;
     uint8_t i;
-    uint8_t local_name[3] =PERIPHERAL_DEVICE_NAME;
+    const uint8_t local_name[3] =PERIPHERAL_DEVICE_NAME;
 
     raw_advdata[0] = 1+strlen(PERIPHERAL_DEVICE_NAME);
     raw_advdata[1] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
@@ -245,7 +245,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
     uint32_t err_code;
  //   uint8_t i;
     uint8_t final_msg[8] = { 'F','i','n','i','s','h','e','d'};
-    uint8_t all_sent;
+    uint8_t all_sent=0;
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_ADV_REPORT:

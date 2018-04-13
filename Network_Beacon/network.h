@@ -40,7 +40,7 @@
 #include "radio_int.h"
 #include "main_int.h"
 
-#define LIMIT_RSSI		-60 // approx. 1-2m distance
+#define NETWORK_LIMIT_RSSI		-60 // approx. 1-2m distance
 #define DATA_LEVEL_1	0
 #define DATA_LEVEL_2	1
 #define DATA_LEVEL_3	10

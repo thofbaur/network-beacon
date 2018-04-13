@@ -35,13 +35,11 @@
 
 
 void infect_init(struct beacon *tag);
-//void write_infect_array(struct beacon *tag);
 void status_change(uint8_t status_new,struct beacon *tag,uint32_t *time_counter);
-//void add_source(uint8_t tag_id);
 uint8_t infect_nus_send_data(ble_nus_t * p_nus);
 void infect_evaluate_contact(struct beacon *tag,const ble_gap_evt_t   * p_gap_evt);
 void infect_main(struct beacon *tag,uint32_t *time_counter);
+void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct beacon *p_tag,uint32_t *p_time_counter);
 
 #endif
-
 #endif

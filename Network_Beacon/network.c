@@ -26,31 +26,39 @@
  */
 
 #include "network.h"
+
+typedef struct network_param_struct {
+	uint16_t limit_netz_flush;
+	uint8_t limit_netz;
+	uint16_t limit_timeout_contact;
+	int8_t limit_rssi;
+} network_param_struct;
+
+network_param_struct params_network = {.limit_netz_flush = 1800, .limit_netz = NETWORK_CONTACTTIME, .limit_timeout_contact = NETWORK_TIMEOUT, .limit_rssi = NETWORK_LIMIT_RSSI};
 static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
-static uint16_t limit_netz_flush = 1800;
-static uint8_t limit_netz = NETWORK_CONTACTTIME;
+
 uint8_t tracking_active = 1;
 #ifdef IDLIST
-static uint8_t  contact_tracker[MAX_NUM_TAGS][5];
-static uint8_t	data_array[LENGTH_DATA_BUFFER][5];
+
+static uint8_t  contact_tracker[MAX_NUM_TAGS-1][6];// Ctr 3 Byte;  Timeout 1 Byte, Contact Seen 1 Byte; Contact Active 1 Byte;
+static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA]; //ID 1 Byte; Ctr Start 3 Byte, Duration 2 Byte
 #else
+
 static uint8_t  contact_list[LENGTH_CONTACT_LIST][12]; //MAC 6 Byte, Ctr 3 Byte; Contact Seen 1 Byte; Contact Active 1 Byte; Timeout 1 Byte,
-static uint8_t	data_array[LENGTH_DATA_BUFFER][11];//MAC 6 Byte, Start Ctr 3 Byte;Duration 2 Byte
+static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA];//MAC 6 Byte, Start Ctr 3 Byte;Duration 2 Byte
 #endif
-
-static uint16_t limit_timeout_contact = NETWORK_TIMEOUT;
-
 
 
 void network_init()
 {
 	uint16_t i;
+
 #ifdef IDLIST
-	memset(&contact_tracker,0x00,MAX_NUM_TAGS*5);
-	for (i=0;i<MAX_NUM_TAGS;i++)
+	memset(&contact_tracker,0x00,(MAX_NUM_TAGS-1)*NETWORK_SIZEDATA);
+	for (i=0;i<(MAX_NUM_TAGS-1);i++)
 	{
-		contact_tracker[i][2] = limit_timeout_contact;
+		contact_tracker[i][5] = params_network.limit_timeout_contact;
 	}
 #else
 	memset(&contact_list,0x00,LENGTH_CONTACT_LIST*12);
@@ -120,14 +128,6 @@ uint8_t network_nus_send_data(ble_nus_t * p_nus)
     uint8_t i;
     uint8_t data[20];
 
-	
-#ifdef IDLIST
-#define MAXLENGTH 4
-#define SIZE_DATA 5
-#else
-#define MAXLENGTH 1
-#define SIZE_DATA 11
-#endif	
 	if (idx_read == idx_write)
 	{
 		data_sent = 1;
@@ -148,22 +148,22 @@ uint8_t network_nus_send_data(ble_nus_t * p_nus)
     		upper_lim  = LENGTH_DATA_BUFFER;
     	}
 
-    	if (upper_lim-idx_read>= MAXLENGTH)
+    	if (upper_lim-idx_read>= NETWORK_MAXLENGTH)
     	{
-    		length = MAXLENGTH;
+    		length = NETWORK_MAXLENGTH;
     	}
     	else
     	{
     		length  = upper_lim-idx_read;
     	}
 
-    	for ( i=0;i<length*SIZE_DATA;i++)
+    	for ( i=0;i<length*NETWORK_SIZEDATA;i++)
 		{
 			data[i] = *(data_array[idx_read] + i);
 		}
     	if (length != 0)
     	{
-    		result_send = radio_nus_send(p_nus,data,SIZE_DATA*length);
+    		result_send = radio_nus_send(p_nus,data,NETWORK_SIZEDATA*length);
     	}
     	if(result_send)
     	{
@@ -236,9 +236,7 @@ void set_contact_active(const ble_gap_evt_t   * p_gap_evt)
 
 void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)
 {
-	static int8_t limit_rssi = LIMIT_RSSI;
-
-	if( p_gap_evt->params.adv_report.rssi >= limit_rssi)
+	if( p_gap_evt->params.adv_report.rssi >= params_network.limit_rssi)
 	{
 		if(tracking_active)
 			{
@@ -247,17 +245,17 @@ void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)
 	}
 }
 
-
 void write_contact_to_buffer(uint8_t *p_idx, uint16_t delta_contact)
 {
+#ifdef IDLIST
+		data_array[idx_write][0] = *p_idx+1;
+		memcpy(&data_array[idx_write][1],&contact_tracker[*p_idx],3);
+		memcpy(&data_array[idx_write][4],&delta_contact,2);
+#else
 	memcpy(data_array[idx_write],&contact_list[*p_idx],9);
 	memcpy(&data_array[idx_write][9],&delta_contact,2);
+#endif
 
-//	data_array[idx_write][0] = *p_idx+1;
-//	data_array[idx_write][2] = contact_list[*p_idx][1];
-//	data_array[idx_write][1] = contact_tracker[*p_idx][0];
-//	data_array[idx_write][4] = (*p_time_counter) >>5  & 0xff;
-//	data_array[idx_write][3]  =  (*p_time_counter) >>13 & 0xff ;
 	idx_write++;
 	if( idx_write >=  LENGTH_DATA_BUFFER)
 	{
@@ -272,44 +270,37 @@ void write_contact_to_buffer(uint8_t *p_idx, uint16_t delta_contact)
 void network_main(uint32_t *p_time_counter)
 {
 	// Evaluate Network contacts
-	// contact_tracker: time, time, timeout, seen, active
+	// contact_tracker: time, time, time, see, act, to
 #ifdef IDLIST
-	//	static int16_t delta_contact = 0;
-//	static uint8_t i = 0;
+	static int16_t delta_contact = 0;
+	static uint8_t i = 0;
 
-	for (i=0;i<MAX_NUM_TAGS;i++)
+	for (i=0;i<(MAX_NUM_TAGS-1);i++)
 	{
 		if( contact_tracker[i][3] ==1 ) //Contact was seen since last main cycle
 		{
-			contact_tracker[i][2] = 0;
+			contact_tracker[i][5] = 0;
 			contact_tracker[i][3] = 0;
 			if( contact_tracker[i][4] == 0) // contact entry not active
 			{
-				contact_tracker[i][1] = *p_time_counter >>5  & 0xff;
-				contact_tracker[i][0] =  *p_time_counter >>13 & 0xff ;
 				contact_tracker[i][4] = 1;
+				contact_tracker[i][2] =  *p_time_counter     & 0xff;
+				contact_tracker[i][1] =  *p_time_counter >>8 & 0xff ;
+				contact_tracker[i][0] =  *p_time_counter >>16 & 0xff ;
 			}
 			else
 			{
-				delta_contact = ((uint16_t)contact_tracker[i][1])<<5;
-				delta_contact |=((uint16_t)contact_tracker[i][0])<<13;
+				delta_contact = ((uint32_t)contact_tracker[i][2]);
+				delta_contact |=((uint32_t)contact_tracker[i][1])<<8;
+				delta_contact |=((uint32_t)contact_tracker[i][0])<<16;
 				delta_contact =  *p_time_counter - delta_contact;
-				if(delta_contact > limit_netz_flush)
+				if(delta_contact > params_network.limit_netz_flush)
 				{
-					data_array[idx_write][0] = i+1;
-					data_array[idx_write][2] = contact_tracker[i][1];
-					data_array[idx_write][1] = contact_tracker[i][0];
-					data_array[idx_write][4] = (*time_counter) >>5  & 0xff;
-					data_array[idx_write][3]  =  (*time_counter) >>13 & 0xff ;
-					idx_write++;
-					if( idx_write >=  LENGTH_DATA_BUFFER)
-					{
-						idx_write = 0;
-					}
-
+					write_contact_to_buffer(&i,delta_contact & 0xffff);
 					update_beacon_info();
-					contact_tracker[i][1] = *p_time_counter >>5  & 0xff;
-					contact_tracker[i][0] =  *p_time_counter >>13 & 0xff ;
+					contact_tracker[i][2] =  *p_time_counter     & 0xff;
+					contact_tracker[i][1] =  *p_time_counter >>8 & 0xff ;
+					contact_tracker[i][0] =  *p_time_counter >>16 & 0xff ;
 				}
 			}
 		}
@@ -317,23 +308,16 @@ void network_main(uint32_t *p_time_counter)
 		{
 			if( contact_tracker[i][4] == 1) // contact entry  active
 			{
-				if( contact_tracker[i][2] >= limit_timeout_contact) // write entry
+				if( contact_tracker[i][5] >= params_network.limit_timeout_contact) // check if timeout is reached
 				{
-					delta_contact = ((uint16_t)contact_tracker[i][1])<<5;
-					delta_contact |=((uint16_t)contact_tracker[i][0])<<13;
+					delta_contact = ((uint32_t)contact_tracker[i][2]);
+					delta_contact |=((uint32_t)contact_tracker[i][1])<<8;
+					delta_contact |=((uint32_t)contact_tracker[i][0])<<16;
 					delta_contact =  *p_time_counter - delta_contact;
-					if(delta_contact > limit_netz)
+					if(delta_contact > params_network.limit_netz)
 					{
-						data_array[idx_write][0] = i+1;
-						data_array[idx_write][2] = contact_tracker[i][1];
-						data_array[idx_write][1] = contact_tracker[i][0];
-						data_array[idx_write][4] = (*p_time_counter-limit_timeout_contact) >>5  & 0xff;
-						data_array[idx_write][3]  =  (*p_time_counter-limit_timeout_contact) >>13 & 0xff ;
-						idx_write++;
-						if( idx_write >=  LENGTH_DATA_BUFFER)
-						{
-							idx_write = 0;
-						}
+//						write entry
+						write_contact_to_buffer(&i,delta_contact & 0xffff);
 						update_beacon_info();
 					}
 					contact_tracker[i][4] = 0;
@@ -341,7 +325,7 @@ void network_main(uint32_t *p_time_counter)
 				}
 				else
 				{
-					contact_tracker[i][2] += MAIN_SAMPLE_RATE;
+					contact_tracker[i][5] += MAIN_SAMPLE_RATE;
 				}
 			}
 		}
@@ -407,3 +391,41 @@ void network_main(uint32_t *p_time_counter)
 #endif
 
 }
+
+
+void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
+{
+	switch (switch_param)
+	{
+
+		case P_TIME_FLUSH:
+		{
+			params_network.limit_netz_flush = (value1<<8) + value2 ;
+			break;
+		}
+		case P_TIME_NETWORK:
+		{
+			params_network.limit_netz = (value1<<(8)) + (value2<<0);
+			break;
+		}
+		case P_TIMEOUT_NETWORK:
+		{
+			params_network.limit_timeout_contact = (value1<<8) + value2;
+
+			break;
+		}
+		case P_RSSI_NETWORK:
+		{
+			params_network.limit_rssi = value1 ;
+			break;
+		}
+		case P_TRACKING_ACTIVE:
+		{
+			tracking_active = (value1);
+			break;
+		}
+		default:
+		break;
+	}
+}
+

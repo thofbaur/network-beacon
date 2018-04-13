@@ -28,8 +28,8 @@ static uint8_t show_status_led = INIT_SHOW_STATUS_LED;
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 struct beacon tag ;
 
-static uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
-static uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
+const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
+const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
 
 
 void set_status_led(void)
@@ -70,14 +70,14 @@ void update_tag_status_infect(uint8_t *status_infect)
 }
 #endif
 
-void update_tag_inf_rev(uint8_t *inf_rev)
+void update_tag_inf_rev(uint8_t *p_inf_rev)
 {
-	tag.inf_rev = (*inf_rev)<<SHIFT_INF_REV;
+	tag.inf_rev = (*p_inf_rev)<<SHIFT_INF_REV;
 }
 
-void update_tag_status_data(uint8_t *status_data)
+void update_tag_status_data(uint8_t *p_status_data)
 {
-	tag.status_data = *status_data;
+	tag.status_data = *p_status_data;
 }
 
 void update_beacon_info()
@@ -89,7 +89,7 @@ void update_beacon_info()
 	manuf_data[0] = tag.id;
 #endif
 #ifdef SIMULATEINFECTION
-	manuf_data[LENGTH_ID+1-1] = tag.status_infect | tag.inf_rev;
+	manuf_data[ADV_LENGTH_ID+1-1] = tag.status_infect | tag.inf_rev;
 #endif
 	manuf_data[LENGTH_MANUF-1] = tag.status_batt | tag.status_data;
 	radio_update_adv(manuf_data);
@@ -135,115 +135,60 @@ static void tag_init(void)
 
 void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 {
-   	if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_central[0] && \
+	static uint8_t i;
+	if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_central[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_central[1] && \
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_central[2] )
     	{
-//        		sender_id = p_gap_evt->params.adv_report.data[POS_ID];
-//        		if( sender_id <=MAX_NUM_TAGS){
-/*        			if( sender_id == search[3] ) // Admin Beacon
-    			{
-    				if( p_gap_evt->params.adv_report.data[POS_ID+1]== 0xFF || p_gap_evt->params.adv_report.data[POS_ID+1] == tag.id){
-    					// Switch to control mode
-    					for(i = POS_ID+2;i<32;i+=3)
-    					{
-    						switch (p_gap_evt->params.adv_report.data[i])
-    						{
-								case P_RESET_INFECT:
-								{
-	        						if( p_gap_evt->params.adv_report.data[i+1]==1)
-									{
-	        							kontakt_infect = 0;
-	        							kontakt_heal = 0;
-										reset_source();
-										add_source(sender_id);
-										status_change(INITIAL_STATUS,&tag,&time_counter);
-										timer_reset = 0;
-									}
 
-									break;
-								}
-								case P_TIME_INFECT:
-								{
-									limit_time_infect = (p_gap_evt->params.adv_report.data[i+1]<<8) + p_gap_evt->params.adv_report.data[i+2] ;
-									break;
-								}
-								case P_TIME_LATENCY:
-								{
-									limit_time_latency =  (p_gap_evt->params.adv_report.data[i+1]<<14) + (p_gap_evt->params.adv_report.data[i+2]<<6);
-									break;
-								}
-								case P_TIME_RECOVER:
-								{
-									limit_time_recovery =  (p_gap_evt->params.adv_report.data[i+1]<<14) + (p_gap_evt->params.adv_report.data[i+2]<<6);
-									break;
-								}
-								case P_TIME_SUSCEPT:
-								{
-									limit_time_suscept =  (p_gap_evt->params.adv_report.data[i+1]<<14) + (p_gap_evt->params.adv_report.data[i+2]<<6);
-									break;
-								}
-								case P_TIMEOUT:
-								{
-									limit_timeout_contact_infect = (p_gap_evt->params.adv_report.data[i+1]<<8) + p_gap_evt->params.adv_report.data[i+2] ;
-									limit_timeout_contact = limit_timeout_contact_infect;
-									limit_timeout_kontakt_heal =  limit_timeout_contact_infect <<1;
-									limit_netz		= 10+ limit_timeout_contact_infect;
-									break;
-								}
-								case P_RSSI:
-								{
-									limit_rssi = - (p_gap_evt->params.adv_report.data[i+1]);
-									break;
-								}
+			if( p_gap_evt->params.adv_report.data[POS_NAME_START+5]== 0xFF || p_gap_evt->params.adv_report.data[POS_NAME_START+5] == tag.id)
+			{
+				// Switch to control mode
+				for(i = POS_NAME_START+5+1;i<32;i+=3)
+				{
+					switch (p_gap_evt->params.adv_report.data[i]>>5)
+					{
+						case 1:
+						{
+							//set a general parameter
+							switch (p_gap_evt->params.adv_report.data[i] & 0x1F)
+							{
 								case P_SHOW_STATUS:
 								{
 									show_status_led = p_gap_evt->params.adv_report.data[i+1];
 									set_status_led();
 									break;
 								}
-								case P_CHANGE_STATUS:
-								{
-									reset_source();
-									add_source(sender_id);
-									status_change((p_gap_evt->params.adv_report.data[i+1]),&tag,&time_counter);
-									break;
-								}
-								case P_TRACKING_ACTIVE:
-								{
-									tracking_active = (p_gap_evt->params.adv_report.data[i+1]);
-									break;
-								}
-								case P_INF_REV:
-								{
-									if (tag.inf_rev != ( (p_gap_evt->params.adv_report.data[i+1])<<SHIFT_INF_REV) )
-									{
-										tag.inf_rev = (p_gap_evt->params.adv_report.data[i+1])<<SHIFT_INF_REV;
-										kontakt_infect = 0;
-										kontakt_heal = 0;
-										reset_source();
-										add_source(sender_id);
-										status_change(INITIAL_STATUS,&tag,&time_counter);
-									}
-									break;
-								}
-								default:
-									break;
-    						}
-    					}
-    				}
-    			}
-    			else{*/
+							}
+							break;
+						}
+						case 2:
+						{
+							//set an infection parameter
+							infect_control((p_gap_evt->params.adv_report.data[i] & 0x1F),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
+							break;
+						}
+						case 4:
+						{
+							//set a network parameter
+							network_control((p_gap_evt->params.adv_report.data[i] & 0x1F),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
+							break;
+						}
+						default:
+						break;
+					}
+				}
+			}
     	}
     	else if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_beacon[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_beacon[1] && \
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_beacon[2] )
     	{
-//
+
 #ifdef SIMULATEINFECTION
     		infect_evaluate_contact(&tag,p_gap_evt);
 #endif
-    			network_evaluate_contact(p_gap_evt);
+    		network_evaluate_contact(p_gap_evt);
     	}
 }
 
@@ -265,13 +210,13 @@ uint8_t main_nus_send_time(ble_nus_t * p_nus)
 	while( !time_sent)
 	{
 		//General data
-		data[3] = (time_counter      & 0xff) ;
-		data[2] = (time_counter >>8  & 0xff) ;
-		data[1] = (time_counter >>16 & 0xff) ;
+		data[2] = (time_counter      & 0xff) ;
+		data[1] = (time_counter >>8  & 0xff) ;
+		data[0] = (time_counter >>16 & 0xff) ;
 #ifdef SIMULATEINFECTION
-		data[0] =tag.status_infect | tag.status_batt | tag.inf_rev;
+		data[3] =tag.status_infect | tag.status_batt | tag.inf_rev;
 #else
-		data[0] =tag.status_batt ;
+		data[3] =tag.status_batt ;
 #endif
 
 		result_send = radio_nus_send(p_nus,data,4);
@@ -303,9 +248,6 @@ static void timer_main_event_handler(void* p_context)
 #endif
 {
 
-//	uint32_t err_code;
-
-//	static int16_t counter_scan = 0;
 	// Increment time since power on
 	time_counter += MAIN_SAMPLE_RATE;
 #ifdef SIMULATEINFECTION
@@ -343,7 +285,6 @@ static void led_init(void)
 
 static void system_initialize(void)
 {
-
 	ble_stack_init();
 	led_init();
 	network_init();

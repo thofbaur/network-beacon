@@ -49,6 +49,7 @@
 #define INITIAL_STATUS				STATUS_S
 
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
+#define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define LIMIT_INFECT 				180 // Time needed with established contact for infection in seconds ToDo 240
 #define INFECT_TIMEOUT_HEAL 		65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 
