@@ -212,7 +212,7 @@ static void uart_send_data( )
 		time_current |= ((uint32_t)p_data[1])<<8;
 		time_current |= (uint32_t)p_data[2];
 #ifdef IDLIST
-		printf("General: : %3u, %1u, %8lu \r\n", current_id, p_data[0], time_current);
+		printf("General: : %3u, %1u, %8lu \r\n", current_id, p_data[3], time_current);
 #else
 		printf("General: :  %1u, %8lu \r\n", p_data[3], time_current);
 #endif
@@ -238,11 +238,17 @@ static void uart_send_data( )
 	{
 		for(i=0;NETWORK_SIZEDATA*i<p_data[20] ;i++)
 		{
-			time_start = ((uint16_t)p_data[6+i*NETWORK_SIZEDATA])<<	16;
-			time_start |= ((uint16_t)p_data[7+i*NETWORK_SIZEDATA])<<8;
-			time_start |= (uint16_t)p_data[8+i*NETWORK_SIZEDATA];
-			time_duration = ((uint16_t)p_data[9+i*NETWORK_SIZEDATA])<<8;
-			time_duration |= (uint16_t)p_data[10+i*NETWORK_SIZEDATA];
+#ifdef IDLIST
+#define IDSHIFT 1
+#else
+#define IDSHIFT 6
+#endif
+
+			time_start 		 = ((uint16_t)p_data[IDSHIFT  +i*NETWORK_SIZEDATA])<<	16;
+			time_start 		|= ((uint16_t)p_data[IDSHIFT+1+i*NETWORK_SIZEDATA])<<8;
+			time_start 		|=  (uint16_t)p_data[IDSHIFT+2+i*NETWORK_SIZEDATA];
+			time_duration 	 = ((uint16_t)p_data[IDSHIFT+3+i*NETWORK_SIZEDATA])<<8;
+			time_duration 	|=  (uint16_t)p_data[IDSHIFT+4+i*NETWORK_SIZEDATA];
 #ifdef IDLIST
 			printf("Netz (ID): : %3u, %3u, %8lu, %8u \r\n",current_id,p_data[0+i*NETWORK_SIZEDATA],time_start, time_duration);
 #else

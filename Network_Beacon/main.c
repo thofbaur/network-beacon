@@ -162,12 +162,15 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 							}
 							break;
 						}
+#ifdef SIMULATEINFECTION
 						case 2:
 						{
 							//set an infection parameter
+
 							infect_control((p_gap_evt->params.adv_report.data[i] & 0x1F),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
 							break;
 						}
+#endif
 						case 4:
 						{
 							//set a network parameter
@@ -199,7 +202,7 @@ uint8_t main_nus_send_time(ble_nus_t * p_nus)
 	uint32_t time_counter_sent=0;
     uint8_t data[4];
 
-    if(time_counter_sent == time_counter)
+    if((time_counter_sent>>2) == (time_counter>>2))
     {
     	time_sent = 1;
     }

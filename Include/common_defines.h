@@ -24,7 +24,7 @@
 /*
  * Compiler Switches to de-acitvate functionality
  */
-#define SIMULATEINFECTION  //Infection only works with ID List
+//#define SIMULATEINFECTION  //Infection only works with ID List
 #define IDLIST
 
 
@@ -89,7 +89,7 @@
 
 #ifdef IDLIST
 	#define NETWORK_MAXLENGTH 3
-	#define NETWORK_SIZEDATA 6
+	#define NETWORK_SIZEDATA 6 // not allowed 5, 10
 #else
 	#define NETWORK_MAXLENGTH 1
 	#define NETWORK_SIZEDATA 11

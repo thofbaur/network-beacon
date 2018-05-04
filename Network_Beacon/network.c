@@ -64,7 +64,7 @@ void network_init()
 	memset(&contact_list,0x00,LENGTH_CONTACT_LIST*12);
 	for (i=0;i<LENGTH_CONTACT_LIST;i++)
 	{
-		contact_list[i][11] = limit_timeout_contact;
+		contact_list[i][11] = params_network.limit_timeout_contact;
 	}
 #endif
 }
@@ -250,10 +250,16 @@ void write_contact_to_buffer(uint8_t *p_idx, uint16_t delta_contact)
 #ifdef IDLIST
 		data_array[idx_write][0] = *p_idx+1;
 		memcpy(&data_array[idx_write][1],&contact_tracker[*p_idx],3);
-		memcpy(&data_array[idx_write][4],&delta_contact,2);
+		data_array[idx_write][4] = (delta_contact >>8) & 0xff;
+		data_array[idx_write][5] = (delta_contact    ) & 0xff;
+
+		//memcpy(&data_array[idx_write][4],&delta_contact,2);
 #else
 	memcpy(data_array[idx_write],&contact_list[*p_idx],9);
-	memcpy(&data_array[idx_write][9],&delta_contact,2);
+	//memcpy(&data_array[idx_write][9],&delta_contact,2);
+	data_array[idx_write][9] = (delta_contact >>8) & 0xff;
+	data_array[idx_write][10] = (delta_contact    ) & 0xff;
+
 #endif
 
 	idx_write++;
@@ -272,7 +278,7 @@ void network_main(uint32_t *p_time_counter)
 	// Evaluate Network contacts
 	// contact_tracker: time, time, time, see, act, to
 #ifdef IDLIST
-	static int16_t delta_contact = 0;
+	static int32_t delta_contact = 0;
 	static uint8_t i = 0;
 
 	for (i=0;i<(MAX_NUM_TAGS-1);i++)
@@ -296,7 +302,7 @@ void network_main(uint32_t *p_time_counter)
 				delta_contact =  *p_time_counter - delta_contact;
 				if(delta_contact > params_network.limit_netz_flush)
 				{
-					write_contact_to_buffer(&i,delta_contact & 0xffff);
+					write_contact_to_buffer(&i,(uint16_t)(delta_contact & 0xffff));
 					update_beacon_info();
 					contact_tracker[i][2] =  *p_time_counter     & 0xff;
 					contact_tracker[i][1] =  *p_time_counter >>8 & 0xff ;
@@ -317,7 +323,7 @@ void network_main(uint32_t *p_time_counter)
 					if(delta_contact > params_network.limit_netz)
 					{
 //						write entry
-						write_contact_to_buffer(&i,delta_contact & 0xffff);
+						write_contact_to_buffer(&i,(uint16_t)(delta_contact & 0xffff));
 						update_beacon_info();
 					}
 					contact_tracker[i][4] = 0;
@@ -354,9 +360,9 @@ void network_main(uint32_t *p_time_counter)
 					delta_contact |=((uint32_t)contact_list[i][7])<<8;
 					delta_contact |=((uint32_t)contact_list[i][6])<<16;
 					delta_contact =  *p_time_counter - delta_contact;
-					if(delta_contact > limit_netz_flush)
+					if(delta_contact > params_network.limit_netz_flush)
 					{
-						write_contact_to_buffer(&i,delta_contact & 0xffff);
+						write_contact_to_buffer(&i,(uint16_t)(delta_contact & 0xffff));
 						update_beacon_info();
 						contact_list[i][8] =  *p_time_counter       & 0xff;
 						contact_list[i][7] =  *p_time_counter  >>8  & 0xff ;
@@ -368,15 +374,15 @@ void network_main(uint32_t *p_time_counter)
 			{
 				if( contact_list[i][10] == 1) // contact entry  active
 				{
-					if( contact_list[i][11] >= limit_timeout_contact) // Check if timeout is reached
+					if( contact_list[i][11] >= params_network.limit_timeout_contact) // Check if timeout is reached
 					{
 						delta_contact = ((uint32_t)contact_list[i][8]);
 						delta_contact |=((uint32_t)contact_list[i][7])<<8;
 						delta_contact |=((uint32_t)contact_list[i][6])<<16;
-						delta_contact =  *p_time_counter - delta_contact-limit_timeout_contact;
-						if(delta_contact > limit_netz) // write entry if longer than threshold
+						delta_contact =  *p_time_counter - delta_contact-params_network.limit_timeout_contact;
+						if(delta_contact > params_network.limit_netz) // write entry if longer than threshold
 						{
-							write_contact_to_buffer(&i,delta_contact & 0xffff);
+							write_contact_to_buffer(&i,(uint6_t)(delta_contact & 0xffff));
 							update_beacon_info();
 						}
 						contact_list[i][10] = 0;
