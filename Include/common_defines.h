@@ -24,23 +24,12 @@
 /*
  * Compiler Switches to de-acitvate functionality
  */
-//#define SIMULATEINFECTION  //Infection only works with ID List
-#define IDLIST
-
-
-
-#ifdef SIMULATEINFECTION
-#ifndef IDLIST
-#error "Simulate infection only works with pre defined ID-List"
-#endif
-#endif
-
+#define SIMULATEINFECTION  //Infection only works with ID List
 #define RECORDNETWORK
-//#define EXECUTEINRAM
+#define IDLIST
+#define EXECUTEINRAM
 
 #define LENGTH_DATA_BUFFER 401 //NO higher than 3700 otherwise Central readout will overflow
-
-
 
 #define STATUS_S 					0
 #define STATUS_L					1
@@ -51,58 +40,16 @@
 #define STATUS_H					6
 
 //Identifier for all beacon, 3 bytes length
-#define PERIPHERAL_DEVICE_NAME      	"AOM"
+#define PERIPHERAL_DEVICE_NAME      	"DSA"
 //Identifier for central administration beacon, 3 bytes length
-#define CENTRAL_DEVICE_NAME      	"AOZ"
+#define CENTRAL_DEVICE_NAME      	"DSZ"
 
-
-#ifdef IDLIST
-	#define ADV_LENGTH_ID	1
-#else
-	#define ADV_LENGTH_ID	0
-#endif
-#ifdef SIMULATEINFECTION
-	#define LENGTH_INF 	1
-#else
-#define LENGTH_INF 	0
-#endif
-
-
-
-
-
-
-#define LENGTH_MANUF 				 ADV_LENGTH_ID + LENGTH_INF+ 1
-#define POS_NAME_START				2
-#ifdef IDLIST
-	#define POS_ID						7
-#endif
-#ifdef SIMULATEINFECTION
-	#define POS_INF_STATUS					7+ ADV_LENGTH_ID
-#endif
-//#define POS_DATA					9// Used from enhanced version
-#define SHIFT_INF_REV	5
-
-#define MAX_NUM_TAGS		128
-#define ID_ZENTRALE		128
-
-
-#ifdef IDLIST
-	#define NETWORK_MAXLENGTH 3
-	#define NETWORK_SIZEDATA 6 // not allowed 5, 10
-#else
-	#define NETWORK_MAXLENGTH 1
-	#define NETWORK_SIZEDATA 11
-#endif
-
-
-
-
-#define INFECT_MASK	0x0F
-#define INFECT_REV_MASK	0xF0
-
+/* Definition of Parameters to be used by Network Control
+ *
+ */
 #define P_NULL			0
 #define P_SHOW_STATUS	0x20+8
+#define P_SET_BEACON_MODE	0x20+1
 
 // Defines for Infect Parameters should be in one block
 #define P_RESET_INFECT		0x40+1
@@ -125,6 +72,45 @@
 #define P_RSSI_NETWORK		0x80+4
 #define P_TRACKING_ACTIVE 	0x80+11
 
+#define MAX_NUM_TAGS		128
+#define ID_ZENTRALE		128
+
+
+
+
+
+
+#ifdef IDLIST
+	#define ADV_LENGTH_ID	1
+#else
+	#define ADV_LENGTH_ID	0
+#endif
+#ifdef SIMULATEINFECTION
+	#define LENGTH_INF 	1
+#else
+#define LENGTH_INF 	0
+#endif
+
+#define LENGTH_MANUF 				 ADV_LENGTH_ID + LENGTH_INF+ 1
+#define POS_NAME_START				2
+#ifdef IDLIST
+	#define POS_ID						7
+#endif
+#ifdef SIMULATEINFECTION
+	#define POS_INF_STATUS					7+ ADV_LENGTH_ID
+#endif
+#define SHIFT_INF_REV	5
+
+#ifdef IDLIST
+	#define NETWORK_MAXLENGTH 3
+	#define NETWORK_SIZEDATA 6 // not allowed 5, 10
+#else
+	#define NETWORK_MAXLENGTH 1
+	#define NETWORK_SIZEDATA 11
+#endif
+
+#define INFECT_MASK	0x0F
+#define INFECT_REV_MASK	0xF0
 
 #ifdef SIMULATEINFECTION
 #define LENGTH_INFECT_ARRAY	25

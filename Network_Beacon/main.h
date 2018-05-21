@@ -48,8 +48,8 @@
 #include "infection_int.h"
 #include "network_int.h"
 #include "radio_int.h"
+#include "adjustable_params.h"
 
-#define INIT_SHOW_STATUS_LED		1  // Determines whether the LED shall represent the current infect status
 
 // General application timer settings.
 #define APP_TIMER_PRESCALER             0    // Value of the RTC1 PRESCALER register.

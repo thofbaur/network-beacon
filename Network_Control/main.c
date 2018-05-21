@@ -26,12 +26,13 @@ static ble_gap_adv_params_t m_adv_params;
 /* Available control parameters
  *
  *
- *
+ * see common_defines.h
  *
  *
  *
  *
  */
+// Set Target beacon
 #define TARGET	0xFF // 0xFF for all Beacons, or ID for dedicated beacon
 
 
@@ -39,28 +40,19 @@ static uint8_t raw_advdata[30] = {
 		4, BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, 0x00,0x00,0x00,
 		23, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
 		TARGET,
-		P_CHANGE_STATUS,0,0,
-		P_TIME_INFECT,  ((300 >>8 ) & 0xFF),((300 ) & 0xFF),
-		P_TIME_RECOVER, ((9000 >>14) & 0xFF),((9000 >> 6) & 0xFF),
-		P_TIME_SUSCEPT, ((10000 >>14) & 0xFF),((10000 >> 6) & 0xFF),
-		P_TRACKING_ACTIVE,0,0,
+//		P_SHOW_STATUS	,0						,0,
+		P_SET_BEACON_MODE_ACTIVE,0,0,
+//		P_TIME_INFECT		,  ((300 >>8 ) & 0xFF)	,((300 ) & 0xFF),
+//		P_TIME_RECOVER		, ((9000 >>14) & 0xFF)	,((9000 >> 6) & 0xFF),
+//		P_TIME_SUSCEPT		, ((10000 >>14) & 0xFF)	,((10000 >> 6) & 0xFF),
+		P_CHANGE_STATUS		,0						,0,
 		P_NULL,0,0,
 		P_NULL,0,0
 
 };
 
-//#define P_NULL	0
-//#define P_RESET_INFECT	1
-//#define P_TIME_INFECT	2  			in seconds  ((x >>8) & 0xFF),((x ) & 0xFF)
-//#define	P_TIME_LATENCY	3		in 64 seconds   ((x >>14) & 0xFF),((x >> 6) & 0xFF)   x in seconds
-//#define	P_TIME_RECOVER	4		in 64 seconds
-//#define	P_TIME_SUSCEPT	5		in 64 seconds
-//#define P_TIMEOUT		6			in seconds
-//#define P_RSSI	7
-//#define P_SHOW_STATUS	8
-//#define P_CHANGE_STATUS	9
-//#define P_TRACKING_ACTIVE 10
-//#define P_INF_REV 11    			0x0F
+
+// Do not modify code below
 static void gap_params_init(void)  //DONE
 {
     uint32_t                err_code;

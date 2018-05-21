@@ -28,6 +28,8 @@ static uint8_t show_status_led = INIT_SHOW_STATUS_LED;
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 struct beacon tag ;
 
+uint8_t time_sent = 0;
+
 const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
 const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
 
@@ -64,9 +66,9 @@ void set_status_led(void)
 }
 
 #ifdef SIMULATEINFECTION
-void update_tag_status_infect(uint8_t *status_infect)
+void update_tag_status_infect(uint8_t status_infect)
 {
-	tag.status_infect = *status_infect;
+	tag.status_infect = status_infect;
 }
 #endif
 
@@ -133,9 +135,14 @@ static void tag_init(void)
 	set_status_led();
 }
 
+
+
 void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 {
 	static uint8_t i;
+	static uint8_t i_max;
+	static uint8_t i_start;
+	static uint8_t param;
 	if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_central[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_central[1] && \
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_central[2] )
@@ -144,14 +151,18 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 			if( p_gap_evt->params.adv_report.data[POS_NAME_START+5]== 0xFF || p_gap_evt->params.adv_report.data[POS_NAME_START+5] == tag.id)
 			{
 				// Switch to control mode
-				for(i = POS_NAME_START+5+1;i<32;i+=3)
+				i_start = POS_NAME_START+5+1;
+				i_max = p_gap_evt->params.adv_report.dlen;
+//				for(i = POS_NAME_START+5+1;i<p_gap_evt->params.adv_report.dlen;i+=3)
+				for(i = i_start;i<i_max;i+=3)
 				{
-					switch (p_gap_evt->params.adv_report.data[i]>>5)
+					param = p_gap_evt->params.adv_report.data[i] & 0xE0;
+					switch (param)
 					{
-						case 1:
+						case 0x20:
 						{
 							//set a general parameter
-							switch (p_gap_evt->params.adv_report.data[i] & 0x1F)
+							switch (p_gap_evt->params.adv_report.data[i] )
 							{
 								case P_SHOW_STATUS:
 								{
@@ -159,22 +170,42 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 									set_status_led();
 									break;
 								}
+								case P_SET_BEACON_MODE:
+								{
+									switch(p_gap_evt->params.adv_report.data[i+1])
+									{
+										case 1:
+											{
+												radio_set_beacon_mode(1);
+												network_set_tracking(1);
+												infect_set_infect(1);
+												break;
+											}
+										case 0:
+										{
+											radio_set_beacon_mode(0);
+											network_set_tracking(0);
+											infect_set_infect(0);
+											break;
+										}
+									break;
+								}
 							}
 							break;
 						}
 #ifdef SIMULATEINFECTION
-						case 2:
+						case 0x40:
 						{
 							//set an infection parameter
 
-							infect_control((p_gap_evt->params.adv_report.data[i] & 0x1F),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
+							infect_control( (p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
 							break;
 						}
 #endif
-						case 4:
+						case 0x80:
 						{
 							//set a network parameter
-							network_control((p_gap_evt->params.adv_report.data[i] & 0x1F),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
+							network_control((p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
 							break;
 						}
 						default:
@@ -195,21 +226,20 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
     	}
 }
 
+void main_reset_time_sent(void)
+{
+	time_sent = 0;
+}
+
+
+
 uint8_t main_nus_send_time(ble_nus_t * p_nus)
 {
-	uint8_t time_sent = 0;
+
 	uint8_t result_send=0;
-	uint32_t time_counter_sent=0;
+
     uint8_t data[4];
 
-    if((time_counter_sent>>2) == (time_counter>>2))
-    {
-    	time_sent = 1;
-    }
-    else
-    {
-    	time_sent = 0;
-    }
 	while( !time_sent)
 	{
 		//General data
@@ -223,10 +253,13 @@ uint8_t main_nus_send_time(ble_nus_t * p_nus)
 #endif
 
 		result_send = radio_nus_send(p_nus,data,4);
-		if( result_send)
+		if( result_send>0)
+		{
+			return time_sent;
+		}
+		else
 		{
 			time_sent = 1;
-			time_counter_sent = time_counter;
 		}
 	}
     return time_sent;
@@ -300,7 +333,10 @@ static void system_initialize(void)
     advertising_init();
     conn_params_init();
     scan_init();
+
 }
+
+
 
 int main(void)
 {

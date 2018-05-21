@@ -22,19 +22,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include "ble.h"
-//#include "ble_hci.h"
+
 #include "nrf_drv_config.h"  //board specific data, based on examples with additional Defines for LEDs
-//#include "boards.h"
-//Added:
+
 #include "app_timer.h"
-//#include "ble_advdata.h"
 #include "app_error.h"
 #include "softdevice_handler.h"
 #define GPIO_COUNT 1
 #include "led_softblink.h"
-
-
 
 
 #include "common_defines.h"
@@ -45,9 +40,7 @@
 #define PERIPHERAL_LINK_COUNT       1                                  /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
 #define ADV_INTERVAL				100 // Advertisement interval in milliseconds
-
 #define CONNECTABLE_ADV_INTERVAL    MSEC_TO_UNITS(ADV_INTERVAL, UNIT_0_625_MS)
-
 #define TX_POWER					4
 
 

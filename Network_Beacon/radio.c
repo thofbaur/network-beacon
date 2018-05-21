@@ -34,6 +34,45 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 static uint16_t nus_cnt = 0;
 static uint8_t nus_active = 0;
 
+void advertising_start(void)
+{
+   uint32_t err_code;
+
+   err_code = sd_ble_gap_adv_start(&m_adv_params);
+   APP_ERROR_CHECK(err_code);
+}
+
+void scan_start(void)
+{
+   uint32_t err_code;
+   //(void) sd_ble_gap_scan_stop();
+   err_code = sd_ble_gap_scan_start(&m_scan_param);
+   APP_ERROR_CHECK(err_code);
+}
+
+
+
+void set_ble_params(uint8_t mode)
+{
+	switch(mode)
+			{
+				case 0:
+				{
+				    m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL_PASSIVE;
+				    m_scan_param.interval = (uint16_t)SCAN_INTERVAL_PASSIVE;
+				    m_scan_param.window = (uint16_t)SCAN_WINDOW_PASSIVE;
+					break;
+				}
+				case 1:
+				{
+				    m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL;
+				    m_scan_param.interval = (uint16_t)SCAN_INTERVAL;
+				    m_scan_param.window = (uint16_t)SCAN_WINDOW;
+				    break;
+				}
+			}
+}
+
 
 void scan_init(void)
 {
@@ -43,6 +82,8 @@ void scan_init(void)
     m_scan_param.timeout   = SCAN_TIMEOUT;
     m_scan_param.interval = (uint16_t)SCAN_INTERVAL;
     m_scan_param.window = (uint16_t)SCAN_WINDOW;
+
+    set_ble_params(INITIAL_MODE);
 }
 
 void advertising_init(void)
@@ -71,6 +112,7 @@ void advertising_init(void)
     m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL;
     m_adv_params.timeout    = 0;
 //    m_adv_params.fp  		= BLE_GAP_ADV_FP_ANY;
+    set_ble_params(INITIAL_MODE);
 }
 
 void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
@@ -85,20 +127,29 @@ void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
     APP_ERROR_CHECK(err_code);
 }
 
-void advertising_start(void)
-{
-   uint32_t err_code;
 
-   err_code = sd_ble_gap_adv_start(&m_adv_params);
-   APP_ERROR_CHECK(err_code);
-}
-
-void scan_start(void)
+void radio_set_beacon_mode(uint8_t mode)
 {
-   uint32_t err_code;
-   //(void) sd_ble_gap_scan_stop();
-   err_code = sd_ble_gap_scan_start(&m_scan_param);
-   APP_ERROR_CHECK(err_code);
+	uint8_t mode_old = 2;
+	uint32_t err_code;
+
+	if(mode == mode_old)
+	{
+		//do nothing
+	}
+	else
+	{
+		err_code =  sd_ble_gap_adv_stop();
+		APP_ERROR_CHECK(err_code);
+		err_code =  sd_ble_gap_scan_stop();
+		APP_ERROR_CHECK(err_code);
+
+		set_ble_params(mode);
+
+		advertising_start();
+		scan_start();
+		mode_old = mode;
+	}
 }
 
 
@@ -191,19 +242,32 @@ static uint8_t nus_push_data(ble_nus_t * p_nus)
 #endif
 {
 	uint8_t all_sent = 0;
-	uint8_t time_sent;
-	uint8_t data_sent;
+	uint8_t time_sent = 0;
+	uint8_t data_sent = 0;
 #ifdef SIMULATEINFECTION
-	uint8_t infect_sent;
+	uint8_t infect_sent=0;
 #endif
+
+	all_sent = 0;
+	time_sent = 0;
+	data_sent = 0;
+	infect_sent = 0;
+
 	//Send current time counter
    time_sent = main_nus_send_time(p_nus);
    // Infection data
 #ifdef SIMULATEINFECTION
-   infect_sent = infect_nus_send_data( p_nus);
+   if(time_sent)
+   {
+	   infect_sent = infect_nus_send_data( p_nus);
+   }
+
 #endif
    //send network data
-   data_sent = network_nus_send_data( p_nus);
+   if(infect_sent)
+   {
+	   data_sent = network_nus_send_data( p_nus);
+   }
 
    all_sent = time_sent & data_sent;
 #ifdef SIMULATEINFECTION
@@ -230,6 +294,10 @@ void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t length)
 	{
    	nus_active = 1;
    	nus_cnt=0;
+   	main_reset_time_sent();
+#ifdef SIMULATEINFECTION
+   	infect_reset_idx_read();
+#endif
    	nus_push_data(p_nus);
 	}
 }
@@ -438,18 +506,17 @@ uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length)
 						err_code == NRF_ERROR_INVALID_STATE ||
 						err_code == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
 	{
-		APP_ERROR_HANDLER(err_code);
-		return 0;
+		return 2;
 	}
 	else if (err_code != NRF_SUCCESS)
 	{
 		APP_ERROR_HANDLER(err_code);
-		return 0;
+		return 1;
 	}
 	else
 	{
 		nus_cnt++;
-		return 1;
+		return 0;
 	}
 }
 

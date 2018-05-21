@@ -51,6 +51,8 @@
 #include "main_int.h"
 #include "network_int.h"
 #include "infection_int.h"
+#include "adjustable_params.h"
+
 
 #define TX_POWER					-20
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(8, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
@@ -70,14 +72,17 @@
 
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
-#define ADV_INTERVAL				250 // Advertisement interval in milliseconds
-#define SCAN_WINDOW_MS				300  //scan window in milliseconds
-#define SCAN_INTERVAL_MS			1000  // scan interval in milliseconds
+
+
+#define SCAN_TIMEOUT				0
+#define CENTRAL_LINK_COUNT          0                                  /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
+#define PERIPHERAL_LINK_COUNT       1                                  /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
+
+
 #define CONNECTABLE_ADV_INTERVAL    MSEC_TO_UNITS(ADV_INTERVAL, UNIT_0_625_MS)
 #define SCAN_WINDOW					MSEC_TO_UNITS(SCAN_WINDOW_MS, UNIT_0_625_MS)  //scan window in 0.625 mus
 #define SCAN_INTERVAL				MSEC_TO_UNITS(SCAN_INTERVAL_MS, UNIT_0_625_MS)  // scan interval in 0.625 mus
-//#define SCAN_PERIOD					20 //in seconds
-#define SCAN_TIMEOUT				0
+#define CONNECTABLE_ADV_INTERVAL_PASSIVE    MSEC_TO_UNITS(ADV_INTERVAL_PASSIVE, UNIT_0_625_MS)
+#define SCAN_WINDOW_PASSIVE					MSEC_TO_UNITS(SCAN_WINDOW_MS_PASSIVE, UNIT_0_625_MS)  //scan window in 0.625 mus
+#define SCAN_INTERVAL_PASSIVE				MSEC_TO_UNITS(SCAN_INTERVAL_MS_PASSIVE, UNIT_0_625_MS)  // scan interval in 0.625 mus
 
-#define CENTRAL_LINK_COUNT          0                                  /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
-#define PERIPHERAL_LINK_COUNT       1                                  /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/

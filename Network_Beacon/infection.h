@@ -24,6 +24,11 @@
  *  Created on: 30.03.2018
  *      Author: thofbaur
  */
+#ifdef SIMULATEINFECTION
+#ifndef IDLIST
+#error "Simulate infection only works with pre defined ID-List"
+#endif
+#endif
 
 
 #include <stdint.h>
@@ -44,22 +49,7 @@
 #include "main_int.h"
 #include "radio_int.h"
 
-#ifdef SIMULATEINFECTION
 
-#define INITIAL_STATUS				STATUS_S
 
-#define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
-#define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
-#define LIMIT_INFECT 				180 // Time needed with established contact for infection in seconds ToDo 240
-#define INFECT_TIMEOUT_HEAL 		65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
+#include "adjustable_params.h"
 
-#define LIMIT_RECOVERY				21600 // Time to Recovery in seconds //TODO    6h (SIR-Modell)
-#define LIMIT_LATENCY				5400 // ToDo in seconds 1500  / 2h
-#define LIMIT_HEAL					300 // Time to heal in seconds TODO 300
-#define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds TODO (SIS-Modell)
-#define LIMIT_RESET					3600 // immunity after reset in seconds 1800 //Maybe this can be changed as now a Infection version is implemented.
-#define INFECT_LIMIT_RSSI		 			-80 // approx. 1-2m distance
-
-#define INF_REV_INIT 				1
-
-#endif

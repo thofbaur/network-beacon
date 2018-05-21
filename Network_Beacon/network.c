@@ -38,7 +38,7 @@ network_param_struct params_network = {.limit_netz_flush = 1800, .limit_netz = N
 static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
 
-uint8_t tracking_active = 1;
+uint8_t tracking_active = INITIAL_MODE;
 #ifdef IDLIST
 
 static uint8_t  contact_tracker[MAX_NUM_TAGS-1][6];// Ctr 3 Byte;  Timeout 1 Byte, Contact Seen 1 Byte; Contact Active 1 Byte;
@@ -165,7 +165,13 @@ uint8_t network_nus_send_data(ble_nus_t * p_nus)
     	{
     		result_send = radio_nus_send(p_nus,data,NETWORK_SIZEDATA*length);
     	}
-    	if(result_send)
+    	if(result_send>0)
+    	{
+    		return data_sent;
+
+    		break;
+    	}
+    	else
     	{
     		idx_read += length;
             update_beacon_info();
@@ -232,6 +238,11 @@ void set_contact_active(const ble_gap_evt_t   * p_gap_evt)
 		contact_list[temp][9]=1;
 	}
 #endif
+}
+
+void network_set_tracking(uint8_t mode)
+{
+	tracking_active = mode;
 }
 
 void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)

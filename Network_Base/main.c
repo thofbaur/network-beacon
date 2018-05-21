@@ -38,7 +38,7 @@
 
 #include "common_defines.h"
 
-#define READOUT_LEVEL			1
+#define READOUT_LEVEL			0
 //#define DATA_LEVEL_1	0
 //#define DATA_LEVEL_2	1
 //#define DATA_LEVEL_3	10

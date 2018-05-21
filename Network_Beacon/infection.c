@@ -39,6 +39,7 @@ static uint16_t timer_reset = LIMIT_RESET;
 uint8_t idx_infect_read=0;
 static uint8_t kontakt_infect = 0;
 static uint8_t kontakt_heal = 0;
+static uint8_t infect_active = INITIAL_MODE;
 
 struct {
 	uint32_t limit_time_heal;
@@ -124,11 +125,18 @@ void add_source(uint8_t tag_id)
 	infect_source[(tag_id-1) >> 3] |=  (1<< ( 7-( (tag_id-1)&7) ) );
 }
 
-uint8_t infect_nus_send_data(uint16_t *nus_cnt,ble_nus_t * p_nus)
+void infect_reset_idx_read(void)
 {
-	uint8_t result_send = 0;
+	idx_infect_read =0;
+}
+
+uint8_t infect_nus_send_data(ble_nus_t * p_nus)
+{
+	uint8_t result_send =0;
 	uint8_t infect_sent = 0;
-    if (idx_infect_read == LENGTH_INFECT_ARRAY)
+//    uint8_t data[] = "abcdefghijklmnopqrst" ;
+
+	if (idx_infect_read == LENGTH_INFECT_ARRAY)
 	{
 		infect_sent = 1;
 	}
@@ -136,38 +144,54 @@ uint8_t infect_nus_send_data(uint16_t *nus_cnt,ble_nus_t * p_nus)
     {
     	infect_sent = 0;
     }
-    while( !infect_sent )
+    while( (!infect_sent) )
     {
-		result_send = radio_nus_send(p_nus, infect_array[idx_infect_read],WIDTH_INFECT_ARRAY);
-    	if(result_send)
-    	{
+//    	for (uint8_t i=0;i<WIDTH_INFECT_ARRAY;i++)
+//		{
+//			data[i] = *(infect_array[idx_infect_read] + i);
+//		}
+		result_send = radio_nus_send(p_nus, infect_array[idx_infect_read],WIDTH_INFECT_ARRAY*1);
+//		result_send = radio_nus_send(p_nus, data,sizeof(data));
+		if(result_send>0)
+		{
+			infect_sent = 0;
+			break;
+		}
+		else
+		{
 			idx_infect_read++;
 			if (idx_infect_read == LENGTH_INFECT_ARRAY)
 			{
 				infect_sent = 1;
-				idx_infect_read = 0;
 			}
 		}
-    }
-    return result_send;
+	}
+  return infect_sent;
 }
 
+void infect_set_infect(uint8_t mode)
+{
+	infect_active = mode;
+}
 
 void infect_evaluate_contact(struct beacon *p_tag,const ble_gap_evt_t   * p_gap_evt)
 {
-	if( p_gap_evt->params.adv_report.rssi >= params_infect.infect_limit_rssi)
+	if(infect_active)
 	{
-		if(  p_tag->status_infect == STATUS_S && \
-				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_I && \
-			(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev  )
+		if( p_gap_evt->params.adv_report.rssi >= params_infect.infect_limit_rssi)
 		{
-			kontakt_infect = 1;
-			add_source(p_gap_evt->params.adv_report.data[POS_ID]);
-		}
-		if(  (p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_H && \
-			(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev && p_tag->status_infect == STATUS_I)
-		{
-			kontakt_heal = 1;
+			if(  p_tag->status_infect == STATUS_S && \
+					(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_I && \
+				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev  )
+			{
+				kontakt_infect = 1;
+				add_source(p_gap_evt->params.adv_report.data[POS_ID]);
+			}
+			if(  (p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_H && \
+				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev && p_tag->status_infect == STATUS_I)
+			{
+				kontakt_heal = 1;
+			}
 		}
 	}
 }
@@ -305,9 +329,11 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 		}
 		case P_CHANGE_STATUS:
 		{
+			kontakt_infect = 0;
+			kontakt_heal = 0;
 			reset_source();
-				add_source(ID_ZENTRALE);
-				status_change(value1,p_tag,p_time_counter);
+			add_source(ID_ZENTRALE);
+			status_change(value1,p_tag,p_time_counter);
 			break;
 		}
 		case P_INF_REV:

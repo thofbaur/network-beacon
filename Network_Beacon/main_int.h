@@ -26,4 +26,6 @@ void update_beacon_info(void);
 void update_tag_status_infect(uint8_t status_infect);
 void update_tag_inf_rev(uint8_t *p_inf_rev);
 void update_tag_status_data(uint8_t *p_status_data);
-//void update_tag_infect_time(uint32_t *infect_time);
+void main_reset_time_sent(void);
+
+

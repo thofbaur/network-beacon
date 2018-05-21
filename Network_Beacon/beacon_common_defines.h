@@ -19,11 +19,3 @@
 
 
 
-#ifndef BEACONCOMMONDEFINES_H_
-#define BEACONCOMMINDEFINES_H_
-
-#define MAIN_SAMPLE_RATE			1  // sample rate for main loop in seconds
-//#define LENGTH_ADV 10
-#define TIME_ZERO					0x0000   // Time initialization
-
-#endif
