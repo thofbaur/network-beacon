@@ -143,6 +143,8 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 	static uint8_t i_max;
 	static uint8_t i_start;
 	static uint8_t param;
+	static uint32_t err_code;
+
 	if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_central[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_central[1] && \
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_central[2] )
@@ -170,17 +172,26 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 									set_status_led();
 									break;
 								}
+								case P_BOOTLOADER:
+								{
+								   //  Write to the the GPREGRET REGISTER and reset the chip
+								   //You can use the sd_-functions
+									err_code = sd_power_gpregret_set(BOOTLOADER_DFU_START);
+									APP_ERROR_CHECK(err_code);
+									sd_nvic_SystemReset();
+									break;
+								}
 								case P_SET_BEACON_MODE:
 								{
 									switch(p_gap_evt->params.adv_report.data[i+1])
 									{
 										case 1:
-											{
-												radio_set_beacon_mode(1);
-												network_set_tracking(1);
-												infect_set_infect(1);
-												break;
-											}
+										{
+											radio_set_beacon_mode(1);
+											network_set_tracking(1);
+											infect_set_infect(1);
+											break;
+										}
 										case 0:
 										{
 											radio_set_beacon_mode(0);
@@ -189,6 +200,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 											break;
 										}
 									break;
+									}
 								}
 							}
 							break;

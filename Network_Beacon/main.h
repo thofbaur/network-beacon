@@ -55,6 +55,8 @@
 #define APP_TIMER_PRESCALER             0    // Value of the RTC1 PRESCALER register.
 #define APP_TIMER_OP_QUEUE_SIZE         10    // Size of timer operation queues.
 
+#define BOOTLOADER_DFU_START 0xB1
+
 //typedef  uint8_t mac_adress[6];
 #define NUM_MACS	127
 const uint8_t list_macs[127][6] = {

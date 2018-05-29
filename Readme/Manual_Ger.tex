@@ -116,7 +116,17 @@ Bekannte Probleme:
 \item  Nach Flashen muss ein Pin-Reset oder Stromunterbrechung vorgenommen werden. Ansonsten bleibt der Chip im Debug Modus und verbraucht wesentlich mehr Strom.  In Seuchenprogramm ist der Pin reset im Makefile integriert. Bei den makefiles der Beispiele von nordic ist das (für nRF5\_SDK\_11.0.0\_89a8197) nicht implementiert.
 \item Falls nicht aufgespielt werden kann, kann ein kompletter ''erase'' im nrfGoStudio helfen.
 \end{itemize}
+\subsubsection{Bootloader}
+Für die Erstellung des Bootloaders die Anleitung von Nordic Semiconductors befolgen
+\url{https://devzone.nordicsemi.com/b/blog/posts/getting-started-with-nordics-secure-dfu-bootloader}
+Kommando um settings für Bootloader zu generieren.
+nrfutil settings generate --family NRF51 --application nrf51822_xxac_s130.hex --application-version 0 --bootloader-version 0 --bl-settings-version 1 bootloader_setting.hex
 
+mergehex --merge .\s130_nrf51_2.0.1_softdevice.hex .\bootloader.hex --output .\SD_BL.hex
+mergehex --merge .\SD_BL.hex .\nrf51822_xxac_s130.hex --output .\SD_BL_APP.hex
+mergehex --merge .\SD_BL_APP.hex .\bootloader_setting.hex --output .\SD_BL_APP_SET.hex
+nrfjprog  -f NRF51 --program .\SD_BL_APP_SET.hex  --chiperase  --verify
+nrfutil pkg generate --hw-version 51 --application-version 0 --application nrf51822_xxac_s130.hex --sd-req 0x87 --key-file priv.pem app_dfu_package.zip
 \section{Wirkprinzip}
 Mit BLE lassen sich verschiedene Betriebsmodi realisieren. Im Peripheral-Betrieb werden regelmäßig ''Advertisments'' ausgesendet, die Beaconspezifisch angepasst werden können. Nutzlast hierbei sind maximal 29 Byte. Im Central-Betrieb wird kontinuierlich oder regelmäßig nach anderen BLE Sendern im Peripheral-Betrieb in der Nähe gesucht. Dabei wird das komplette Advertisments empfangen und kann verarbeitet werden. Hier können auch weitere Daten angefordert werden (Scan Request) die vom Peripheral in einer Scan-Response gesendet werden. Hierbei können weitere 29 Byte übermittelt werden. Ein Central kann auch eine Verbindung zu einem Peripheral herstellen  (connect) um die kompletten Daten auslesen zu können.
 

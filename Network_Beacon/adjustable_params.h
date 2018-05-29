@@ -29,11 +29,9 @@
 #define TIME_ZERO					0x0000   // Time initialization
 
 /* Infection Paramters
- *
- *
  */
+#define INITIAL_STATUS				STATUS_S
 
-#define INITIAL_STATUS				STATUS_I
 
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.

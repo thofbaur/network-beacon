@@ -47,9 +47,10 @@
 /* Definition of Parameters to be used by Network Control
  *
  */
-#define P_NULL			0
-#define P_SHOW_STATUS	0x20+8
+#define P_NULL				0
+#define P_SHOW_STATUS		0x20+8
 #define P_SET_BEACON_MODE	0x20+1
+#define P_BOOTLOADER		0x20+2
 
 // Defines for Infect Parameters should be in one block
 #define P_RESET_INFECT		0x40+1
