@@ -1,0 +1,217 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+% This is a simple template for a LaTeX document using the ''article'' class.
+% See ''book'', ''report'', ''letter'' for other types of document.
+
+\documentclass[11pt,ngerman]{scrartcl} % use larger type; default would be 10pt
+
+\usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+
+%%% Examples of Article customizations
+% These packages are optional, depending whether you want the features they provide.
+% See the LaTeX Companion or other references for full information.
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+\usepackage{hyperref}
+\usepackage[ngerman]{babel}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+% These packages are all incorporated in the memoir class to one degree or another...
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+% (This matches ConTeXt defaults)
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+
+
+%%% END Article customizations
+
+%%% The ''real'' document content comes below...
+
+\title{Anleitung für Seuchen Becaons}
+\author{Tobias Hofbaur \footnote{tobias@hofbaur.eu}}
+%\date{} % Activate to display a given date or no date (if empty),
+         % otherwise the current date is printed 
+
+\begin{document}
+\maketitle
+
+\section{Überblick}
+Die Beacons wurden 2016 für den Kurs Seuchen und Epidemien in Urspring angeschafft um ein Seuche über die gesamte Akademie simulieren zu können, ohne auf die aktive Mitarbeit der TN angewiesen zu sein. 
+Jeder Akademieteilnehmer und teilweise auch das Personal vor Ort bekommt mit dem Namensschild ein Beacon. Die Grundidee ist, dass die Beacon ständig ihre ID und ihren aktuellen Status senden. Befindet sich ein suszeptibler Beacon nahe und lang genug an einem infektiösen, wird er selber infektiös und sendet fortan den infektiösen Status.
+
+Für die Akademie Torgelow 2017 wurde die Anwendung zusätzlich um die Aufzeichnung des sozialen Netzwerkes ergänzt.
+
+
+\subsection{Software-Architektur}
+Das Gesamtsystem ist aus fünf Teilen aufgebaut:
+\begin{itemize}
+\item Firmware  für Seuchensimulation und Netzwerkerfassung; Ordner ''Network\_Beacon''; Kann auf Beacons oder DK aufgespielt werden
+\item Firmware für Administration (Ordner Network\_Control; Veränderung von Parametern im Betrieb; Neuinfektionen; etc.);  Kann auf Beacons oder DK aufgespielt werden
+\item Firmware zum Aufzeichnen (Ordner Network\_Base); liest die auf den Beacons gespeicherten Daten aus und sendet sie über eine UART Schnittstelle an den PC. Aufzeichnung am PC kann als einfache Log Datei mit z.B. ExtraPutty erfolgen; kann nur auf DK aufgespielt werden.
+\item  Matlab Skript (Log\_Auswertung, R2017b)) das aus den Log Dateien eine csv Datei mit den Kontakten erstellt und eine mat Datei mit dem ausgewerteten Graphen (inklusive Seuchendaten)
+\item  Matlab Skript (Seuchen\_GUI, R2017b)) das den ausgewerteten Graphen einliest und auf einem gewählten Abschnitt grafisch darstellt.
+\end{itemize}
+
+\subsection{Hardware}
+\begin{itemize}
+\item (117-x) nRF51822 Bluetooth Smart Beacon Kit Rev 1.3 (32kB RAM) (Nordic Boardbezeichnung PCA10028), davon zwei neuangeschafft und noch mit der Default Firmware; Aktuell ist auf den Rev1.3 Chips (bis auf die 2 neuen) eine Software geflasht, die Seuchensimulation und Erfassung der sozialen Kontakte ermöglich. Darunter ist ein Bootloader geflasht für Update ohne Kabel. (Details unten)
+\item 1 nRF51822 Bluetooth Smart Beacon Kit Rev 1.2 (16kB RAM)
+\item 4 nRF51 DK (32kB RAM) (Nordic Boardbezeichnung PCA20006)
+\item TC2030-CTX-NL  DebugKabel mit Clip zur Fixierung
+\end{itemize}
+\section{Allgemeines}
+\subsection{Stromversorgung}
+Das DK kann über ein USB Kabel mit micro USB Stecker mit Strom versorgt werden. Alternativ ist eine Stromversorgung über eine CR2032 Knopfzelle möglich. Es dürfen niemals beide Stromquellen gleichzeitig verwendet werden! (Bei versehentlicher Verwendung ist es bisher aber auch noch nicht explodiert...)
+Die Beacons müssen über CR1632 Knopfzellen mit Strom versorgt werden. Das Debugkabel liefert keinen Strom, so dass auch bei Programmierung die Knopfzelle nötig ist.
+
+\subsection{Stromverbrauch}
+Der geringe Stromverbrauch von BLE basiert zu einem großen Teil in der sparsamen Aktivierung der BL Signals. Im Empfangmodus (Rx) verbraucht der Chip ca. 13 mA. Im Sendemodus je nach Leistungsstärke und Paketgröße ~5mA. Ein Adv. Paket benötigt ca. 15ms Sendezeit. Da die Batterien nur ~130mAh Kapazität haben muss sehr genau überlegt werden, welche Sende- und Empfangszyklen benötigt werden. Mehr dazu im Beispiel der SeuchenApp weiter unten.
+\subsection{Programmierung}
+Die Dokumentation durch NordicSemiconductor ist hervoragend, ebenso der Support sowohl im Forum, als auch in bei expliziter Erstellung eines ''Support Cases''. 
+
+Für die Programmierung sieht Nordic mehrere Optionen vor. Der offizielle Weg verwendet die kostenpflichtige Entwicklungsumgebung (IDE) Keil. Die inoffiziell unterstützte Variante ist mit Makefiles über die OpenSource IDE Ecplise. Ein sehr gutes Tutorial ist unter \url{https://devzone.nordicsemi.com/tutorials/7/} (Stand 15.8.2016) zu finden. Das beschriebene Vorgehen hat bei mir auch bei späteren Versionen von Eclipse einwandfrei funktioniert. Lediglich für die Debug Einstellungen musste der Befehl des Debuggers explizit angegeben werden. 
+NordicSemiconductor stellt einen fertigen Bluetooth Stack zur Verfügung der die komplette Ansteuerung des BLE Senders übernimmt. Hierzu muss das Softdevice auf den Chip geflasht werden. Im Betrieb verbraucht der Softdevice ca. 8 MB RAM.
+NordicSemiconductor stellt den Softdevice und Code Beispiele in einem SDK zur Verfügung. Für die aktuelle Software wurde SDK 12.3 (\url{https://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF5-SDK\#Downloads}) verwendet. Beim Wechsel der Versionen werden die Schnittstellen und Funktionen von NordicSemi teilweise verändert, so dass ein Upgrade nur erfolgen sollte falls unbedingt nötig.
+
+Die Code Beispiele in den Software Delevopment Kits (SDK) bieten einen guten Startpunkt. 
+
+Auf den Beacons (bis auf den zwei neuen) wurde ein Bootloader aufgespielt der ein drahtloses Update der Firmware ermöglicht. Das Vorgehen dazu ist der Dokumentation von Nordice beschrieben. Der private Schlüssel ist im Ordner ''Vault''. Der Bootloader sollte weiterhin aufgespielt werden da im Falle eines Verlust oder Defekts des teuren J-Tag Kabels trotzdem die Firmware aktualisiert werden kann.
+
+
+Bekannte Probleme:
+\begin{itemize}
+\item  Nach Flashen muss ein Pin-Reset oder Stromunterbrechung vorgenommen werden. Ansonsten bleibt der Chip im Debug Modus und verbraucht wesentlich mehr Strom.  In Seuchenprogramm ist der Pin reset im Makefile integriert. Bei den makefiles der Beispiele von nordic ist das (für nRF5\_SDK\_11.0.0\_89a8197) nicht implementiert.
+\item Falls nicht aufgespielt werden kann, kann ein kompletter ''erase'' im nrfGoStudio helfen.
+\end{itemize}
+
+\section{Wirkprinzip}
+Mit BLE lassen sich verschiedene Betriebsmodi realisieren. Im Peripheral-Betrieb werden regelmäßig ''Advertisments'' ausgesendet, die Beaconspezifisch angepasst werden können. Nutzlast hierbei sind maximal 29 Byte. Im Central-Betrieb wird kontinuierlich oder regelmäßig nach anderen BLE Sendern im Peripheral-Betrieb in der Nähe gesucht. Dabei wird das komplette Advertisments empfangen und kann verarbeitet werden. Hier können auch weitere Daten angefordert werden (Scan Request) die vom Peripheral in einer Scan-Response gesendet werden. Hierbei können weitere 29 Byte übermittelt werden. Ein Central kann auch eine Verbindung zu einem Peripheral herstellen  (connect) um die kompletten Daten auslesen zu können.
+
+In der aktuellen Version wechselt die Network\_Beacon ständig zwischen Sende und Empfangsmodus. Sie kann auf Beacons und DK aufgespielt werden.
+
+Im Sendemodus  meldet sich jedes Beacon mit dem Namen ''DSA'' und sendet als Advertisment 3 Bytes Nutzlast. 
+\begin{itemize}
+\item Seine ID (Nr von 1 bis 120, eigentlich bis 128 möglich, aber aktuell können beim Auslesen maximal 15 Bytes = 120 Bit übertragen werden)
+\item Infektionsstatus: Aktueller Zustand im SIRV Model und die Version der aktuell aufgespielten Seuchenparameter
+\item Batteriestatus und Menge an aufgezeichneten sozialen Kontakten.
+\end{itemize}
+
+Im Empfangsmodus wird nach Advertisements gescannt die von Geräten mit Namen DSA kommen. Ein solches Paket wird dann in verschiedenen Stufen ausgewertet.
+\begin{itemize}
+\item Ist das Paket von der Zentrale (Network\_control) werden die übermittelten Parameter eingestellt. Die Parameter werden aktuell nur im RAM gespeichert und werden nach einem Reset etwa durch Batteriewechsel oder Wackelkontakt wieder auf die Default werte gesetzt. 
+\item Ist die Signalstärke über dem (parametrierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
+\end{itemize}
+Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[-,>=stealth',shorten >=1pt,auto,node distance=4cm,
+                   thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+\node[initial,state] 	(S) 						{S};
+\node[state]						(L) [right of=S] 			{L};
+\node[state] 						(I) [right of =L] 			{I};
+\node[state,accepting]						(R) [right of = I] 		{R};
+\node[state] 						(V) [below left of=I] 	{V};
+  \path[every node/.style={font=\sffamily\small},->]
+    (S) edge 					node {Kontakt I, $t_{infect}$} 	(L)
+	    edge 	[bend right]	node {Kontakt Z} 					(V)
+    (L) edge  					node {$t_{latency}$} 				(I)
+	    	edge 					node {Kontakt Z} 					(V)  	
+    (I) 	edge  [bend right=90] 	node {$t_{suscept}$} 				(S) 
+	    	edge  [bend right=45] 	node {Kontakt H, $t_{heal}$} 		(S)
+    	    	edge 					node {Kontakt Z} 					(V)
+		edge  					node {$t_{recovery}$}				(R)
+    (R)	edge 	[bend left]	node {Kontakt Z} 					(V);
+    
+
+\end{tikzpicture}
+\caption{Infektionszustände der der Seuchenfunktionalität}
+   \label{fig:statemachine}
+\end{figure}
+
+Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
+
+Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
+\begin{itemize}
+\item \#define ADV\_INTERVAL				110 // Advertisement interval in milliseconds
+\item \#define SCAN\_WINDOW\_MS				125  //scan window in milliseconds
+\item \#define SCAN\_INTERVAL\_MS			10000  // scan interval in milliseconds
+\end{itemize}
+
+
+Die veränderbaren Parameter sind in Network\_beacon/main.h defaultmäßig wie folgt eingestellt:
+\begin{itemize}
+\item \#define LIMIT\_RECOVERY				21600 // Time to Recovery in seconds     6h (SIR-Modell)
+\item \#define LIMIT\_LATENCY				5400 //  in seconds 1500  / Suggestion 30 min
+\item \#define LIMIT\_HEAL					300 // Time to heal in seconds TODO 300
+\item \#define LIMIT\_SUSCEPT				1400000 // Time to suscept in seconds TODO (SIS-Modell)
+\item \#define LIMIT\_RESET					3600 // immunity after reset in seconds 1800
+\item \#define LIMIT\_RSSI		 			-80 // entspricht ca. 1-2m Abstand
+\end{itemize}
+
+Das Auslesen der Daten erfolgt über die Firmware im Ordner netzwerk\_zentrale. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
+\begin{itemize}
+\item Aktueller interner Timer
+\item Vollständiger Seuchen Ringspeicher
+\item Netzwerk Ringspeicher ab dem letzten Auslesen
+\end{itemize}
+
+Die Daten werden anschließend über die UART Schnittstelle bereitgestellt und können dort ausgelesen werden. Bewährt hat sich hierbei ExtraPutty, da dies mit Zeitstempel loggen kann. Die Verbindung erfolgt über COM.
+Das Suchen nach Beacon startet auf dem DK erst nach Druck auf Button 1 aktiviert, Button 2 deaktiviert das Auslesen wieder. Dies soll verhindern, dass Daten ins Nirvana geschickt werden, falls noch kein PC logbereit ist.
+Aktuell scheint das Auslesen nur 2h lang aktiv zu sein, danach beendet ''etwas'' das Auslesen, Vermutlich wird die Verbindung vom PC deaktiviert. Dies sollte noch untersucht werden.
+
+Das geloggte Skript kann mit dem Matlab Skript Log\_Auswertung verarbeitet werden. Das Skript erzeugt eine CSV-Datei in der die sozialen Kontakte im Format (Node\_start,Node\_end,Time\_start,Time\_end)  aufgezeichnet werden
+Zusätzlich wird ein .mat Datei erzeugt in der zum einen aus den Kontakten der entsprechende zeitabhänge Graph erstellt wird und zum anderen für jeden Knoten relevante Daten notiert werden. Diese Daten umfassen zum einen die Infektionsdaten, zum anderen Daten wie aktueller Timer, letztes Auslesen, Anzahl der Reset. 
+
+Die Funktion Aufräumen säubert doppelte Daten und Überschneidungen. Aufgrund der großen Datenmengen kann dies einige Zeit in Anspruch nehmen.
+
+Die .mat Datei kann im Skript Seuchen\_GUI eingelesen werden. Hier kann der zu betrachtende Zeitabschnitt gewählt werden und verschiedene Plot erstellt und abgespeichert werden. Zusätzlich kann eine rudimentäre Simulation auf dem bekannten Graphen ausgeführt werden.
+Es kann eine gexf Datei für Gephi erstellt werden, die den zeitlichen Verlauf des Netzwerks und den Verlauf der Seuche grafisch anschaulich macht.
+
+
+\subsection{Mögliche Erweiterungen}
+\begin{itemize}
+\item  Generelles Aufräumen und Optimieren - Done
+\item  Stromsparmaßnahmen: 
+\begin{itemize}
+\item 	Ausführen des Codes aus dem RAM; 
+\item Verringerung der Paketgrößen und Übermittlung von weiteren Daten nur auf scanresponse. 
+\end{itemize} 
+\item  Speichern von veränderten Parametern im Flash
+\item  ? Implementierung der Seuchenparameter im Sender, d.h. Sender übermittelt wie ansteckend seine Seuche ist.
+\end{itemize}
+\end{document}
