@@ -46,7 +46,6 @@
  * @brief Bootloader project main file for secure DFU.
  *
  */
-
 #include <stdint.h>
 #include "boards.h"
 #include "nrf_mbr.h"

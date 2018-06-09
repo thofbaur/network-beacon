@@ -1,11 +1,11 @@
 PROJECT_NAME     := secure_dfu_secure_dfu_ble_s130_pca20006
-TARGETS          := nrf51822_xxac_s130
+TARGETS          := bootloader_nrf51822_xxac_s130
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := C:\nRF5_SDK_12.3.0_d7731ad
+SDK_ROOT := C:/nRF5_SDK_12.3.0_d7731ad
 PROJ_DIR := ../..
 
-$(OUTPUT_DIRECTORY)/nrf51822_xxac_s130.out: \
+$(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.out: \
   LINKER_SCRIPT  := $(PROJ_DIR)/secure_dfu_gcc_nrf51.ld
 
 # Source files common to all targets
@@ -33,6 +33,7 @@ SRC_FILES += \
   $(PROJ_DIR)/dsa_public_key.c \
   $(PROJ_DIR)/dfu_req_handling.c \
   $(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/nrf_dfu.c \
   $(SDK_ROOT)/components/ble/common/ble_advdata.c \
   $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
   $(SDK_ROOT)/components/ble/common/ble_srv_common.c \
@@ -45,8 +46,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_app_start.c \
   $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_info.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_flash.c \
+    $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_flash.c \
   $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_mbr.c \
   $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_settings.c \
   $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_transport.c \
@@ -90,7 +90,8 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/softdevice/s130/headers/nrf51 \
   $(SDK_ROOT)/components/libraries/queue \
   $(SDK_ROOT)/components/toolchain/gcc \
-
+  $(SDK_ROOT)/components/drivers_nrf/rtc \
+  
 # Libraries common to all targets
 LIB_FILES += \
   $(SDK_ROOT)/external/micro-ecc/nrf51_armgcc/armgcc/micro_ecc_lib_nrf51.a \
@@ -144,12 +145,12 @@ LDFLAGS += --specs=nano.specs -lc -lnosys
 .PHONY: $(TARGETS) default all clean help flash 
 
 # Default target - first one defined
-default: nrf51822_xxac_s130
+default: bootloader_nrf51822_xxac_s130
 
 # Print all targets that can be built
 help:
 	@echo following targets are available:
-	@echo 	nrf51822_xxac_s130
+	@echo 	bootloader_nrf51822_xxac_s130
 
 TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
@@ -162,7 +163,7 @@ endif
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
-flash: $(OUTPUT_DIRECTORY)/nrf51822_xxac_s130.hex
+flash: $(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.hex
 	@echo Flashing: $<
 	nrfjprog --program $< -f nrf51 --sectorerase
 	nrfjprog --reset -f nrf51

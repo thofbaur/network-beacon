@@ -1069,6 +1069,9 @@ nrf_dfu_res_code_t nrf_dfu_req_handler_on_req(void * p_context, nrf_dfu_req_t * 
             break;
     }
 
+    // Reload the WDTs RR[0] reload register
+    NRF_WDT->RR[0] = WDT_RR_RR_Reload;
+
     return ret_val;
 }
 
