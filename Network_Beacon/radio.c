@@ -34,6 +34,19 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 static uint16_t nus_cnt = 0;
 static uint8_t nus_active = 0;
 
+struct {
+	uint16_t	adv_interval;
+	uint16_t	adv_interval_passive;
+	uint16_t	scan_interval;
+	uint16_t	scan_interval_passive;
+	uint16_t	scan_window;
+	uint16_t	scan_window_passive;
+	uint8_t		mode;
+} params_radio;
+
+
+
+
 void advertising_start(void)
 {
    uint32_t err_code;
@@ -50,24 +63,22 @@ void scan_start(void)
    APP_ERROR_CHECK(err_code);
 }
 
-
-
 void set_ble_params(uint8_t mode)
 {
 	switch(mode)
 			{
 				case 0:
 				{
-				    m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL_PASSIVE;
-				    m_scan_param.interval = (uint16_t)SCAN_INTERVAL_PASSIVE;
-				    m_scan_param.window = (uint16_t)SCAN_WINDOW_PASSIVE;
+				    m_adv_params.interval   = params_radio.adv_interval_passive;
+				    m_scan_param.interval = params_radio.scan_interval_passive;
+				    m_scan_param.window = params_radio.scan_window_passive;
 					break;
 				}
 				case 1:
 				{
-				    m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL;
-				    m_scan_param.interval = (uint16_t)SCAN_INTERVAL;
-				    m_scan_param.window = (uint16_t)SCAN_WINDOW;
+					m_adv_params.interval   = params_radio.adv_interval;
+					m_scan_param.interval = params_radio.scan_interval;
+					m_scan_param.window = params_radio.scan_window;
 				    break;
 				}
 			}
@@ -80,10 +91,9 @@ void scan_init(void)
     m_scan_param.selective = 0;
     m_scan_param.p_whitelist = NULL;
     m_scan_param.timeout   = SCAN_TIMEOUT;
-    m_scan_param.interval = (uint16_t)SCAN_INTERVAL;
-    m_scan_param.window = (uint16_t)SCAN_WINDOW;
 
-    set_ble_params(INITIAL_MODE);
+
+    set_ble_params(params_radio.mode);
 }
 
 void advertising_init(void)
@@ -109,10 +119,10 @@ void advertising_init(void)
     memset(&m_adv_params, 0, sizeof(m_adv_params));
 
     m_adv_params.type       = BLE_GAP_ADV_TYPE_ADV_IND;
-    m_adv_params.interval   = CONNECTABLE_ADV_INTERVAL;
     m_adv_params.timeout    = 0;
 //    m_adv_params.fp  		= BLE_GAP_ADV_FP_ANY;
-    set_ble_params(INITIAL_MODE);
+
+    set_ble_params(params_radio.mode);
 }
 
 void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
@@ -520,3 +530,18 @@ uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length)
 	}
 }
 
+void radio_params_init(void)
+{
+	params_radio.adv_interval = CONNECTABLE_ADV_INTERVAL;
+	params_radio.adv_interval_passive = CONNECTABLE_ADV_INTERVAL_PASSIVE;
+	params_radio.scan_interval = (uint16_t)SCAN_INTERVAL;
+	params_radio.scan_interval_passive = (uint16_t)SCAN_INTERVAL_PASSIVE;
+	params_radio.scan_window =(uint16_t)SCAN_WINDOW;
+	params_radio.scan_window_passive = (uint16_t)SCAN_WINDOW_PASSIVE;
+	params_radio.mode = INITIAL_MODE;
+	gap_params_init();
+	services_init();
+	advertising_init();
+	conn_params_init();
+	scan_init();
+}

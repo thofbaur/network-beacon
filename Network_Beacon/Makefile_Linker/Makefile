@@ -4,7 +4,7 @@ export OUTPUT_FILENAME
 #MAKEFILE_NAME := $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 MAKEFILE_NAME := $(MAKEFILE_LIST)
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME) ) 
-SDK_PATH = C:\nRF5_SDK_12.3.0_d7731ad
+SDK_PATH = C:/nRF5_SDK_12.3.0_d7731ad
 #SDK_PATH = D:/Privat/nRF5_SDK_11.0.0_89a8197
 TEMPLATE_PATH = $(SDK_PATH)/components/toolchain/gcc
 
@@ -60,6 +60,7 @@ $(SDK_PATH)/components/ble/ble_services/common/ble_srv_common.c \
 $(SDK_PATH)/components/ble/ble_advertising/ble_advertising.c \
 $(SDK_PATH)/components/libraries/fstorage/fstorage.c \
 $(SDK_PATH)/components/drivers_nrf/power/nrf_drv_power.c \
+$(SDK_PATH)/components/libraries/fds/fds.c \
 #$(SDK_PATH)/components/libraries/experimental_section_vars/section_vars.c \
 
 #assembly files common to all targets
@@ -69,6 +70,7 @@ ASM_SOURCE_FILES  = $(SDK_PATH)/components/toolchain/gcc/gcc_startup_nrf51.s
 #INC_PATHS += -I$(abspath ../../../../../components/device)
 INC_PATHS += -I$(abspath   ../../Include)    #include folder for common_defines
 INC_PATHS += -I$(abspath ../config/)
+INC_PATHS += -I$(SDK_PATH)/components/libraries/fds
 INC_PATHS += -I$(SDK_PATH)/components/device
 INC_PATHS += -I$(SDK_PATH)/examples/bsp
 INC_PATHS += -I$(SDK_PATH)/components/ble/common
@@ -284,7 +286,7 @@ flash_beacon: nrf51822_xxac_s130
 	nrfjprog -p -f nrf51
 
 flash_sd_beacon: nrf51822_xxac_s130
-	@echo Flashing: s130_nrf51_2.0.0_softdevice.hex
+	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
 	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --chiperase
 	nrfjprog --reset -f nrf51
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
@@ -298,6 +300,6 @@ flash_DK: nrf51422_xxac_s130
 	
 ## Flash softdevice
 flash_softdevice:
-	@echo Flashing: s130_nrf51_2.0.0_softdevice.hex
+	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
 	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --chiperase
 	nrfjprog -p -f nrf51

@@ -30,25 +30,21 @@
 
 /* Infection Paramters
  */
-#define INITIAL_STATUS				STATUS_S
-
+#define INFECT_INITIAL_STATUS				STATUS_I
 
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define LIMIT_INFECT 				30 // Time needed with established contact for infection in seconds ToDo 240
-#define INFECT_TIMEOUT_HEAL 		65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
-
 #define LIMIT_RECOVERY				21600 // Time to Recovery in seconds //TODO    6h (SIR-Modell)
 #define LIMIT_LATENCY				10 // ToDo in seconds 1500  / 2h
 #define LIMIT_HEAL					300 // Time to heal in seconds TODO 300
 #define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds TODO (SIS-Modell)
-#define LIMIT_RESET					3600 // immunity after reset in seconds 1800 //Maybe this can be changed as now a Infection version is implemented.
 #define INFECT_LIMIT_RSSI		 			-80 // approx. 1-2m distance
 
-#define INF_REV_INIT 				1
+#define INF_REV_INIT 				2
 
 /* Radio Parameters
- *
+ * ToDo
  */
 #define ADV_INTERVAL				250 // Advertisement interval in milliseconds
 #define SCAN_WINDOW_MS				300  //scan window in milliseconds
@@ -62,7 +58,7 @@
  */
 
 #define NETWORK_LIMIT_RSSI		-60 // approx. 1-2m distance
-#define DATA_LEVEL_1	0
+#define DATA_LEVEL_1	0    	//ToDo
 #define DATA_LEVEL_2	1
 #define DATA_LEVEL_3	10
 #define DATA_LEVEL_4	100

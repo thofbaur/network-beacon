@@ -24,8 +24,12 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt);
 uint8_t main_nus_send_time(ble_nus_t * p_nus);
 void update_beacon_info(void);
 void update_tag_status_infect(uint8_t status_infect);
-void update_tag_inf_rev(uint8_t *p_inf_rev);
+void update_tag_inf_rev(uint8_t inf_rev);
 void update_tag_status_data(uint8_t *p_status_data);
 void main_reset_time_sent(void);
+bool main_record_exists(uint16_t file_id, uint16_t key);
+void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key);
+void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key);
+
 
 

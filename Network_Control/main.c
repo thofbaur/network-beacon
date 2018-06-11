@@ -41,12 +41,12 @@ static uint8_t raw_advdata[30] = {
 		23, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
 		TARGET,
 //		P_SHOW_STATUS	,0						,0,
-		P_BOOTLOADER,0,0,
+//		P_BOOTLOADER,1,0,
 //		P_TIME_INFECT		,  ((300 >>8 ) & 0xFF)	,((300 ) & 0xFF),
 //		P_TIME_RECOVER		, ((9000 >>14) & 0xFF)	,((9000 >> 6) & 0xFF),
 //		P_TIME_SUSCEPT		, ((10000 >>14) & 0xFF)	,((10000 >> 6) & 0xFF),
 		//P_CHANGE_STATUS		,0						,0,
-		P_NULL,0,0,
+		P_INF_REV,1,0,
 		P_NULL,0,0
 
 };

@@ -148,7 +148,11 @@ nrfutil pkg generate --hw-version 51 --application-version 0
 \begin{verbatim}
 nrfutil dfu ble -ic NRF51 -pkg app_dfu_package.zip -p COM6 -f
 \end{verbatim}
-
+Falls das Update wegen Error 13 fehlschlägt, kann es sein, dass das DK nicht richtig geflasht ist. Dann mit 
+\begin{verbatim}
+nrfjprog --eraseall
+\end{verbatim}
+das DK komplett löschen. Die Update Firmware wird automatisch aufgespielt.
 \section{Wirkprinzip}
 Mit BLE lassen sich verschiedene Betriebsmodi realisieren. Im Peripheral-Betrieb werden regelmäßig ''Advertisments'' ausgesendet, die Beaconspezifisch angepasst werden können. Nutzlast hierbei sind maximal 29 Byte. Im Central-Betrieb wird kontinuierlich oder regelmäßig nach anderen BLE Sendern im Peripheral-Betrieb in der Nähe gesucht. Dabei wird das komplette Advertisments empfangen und kann verarbeitet werden. Hier können auch weitere Daten angefordert werden (Scan Request) die vom Peripheral in einer Scan-Response gesendet werden. Hierbei können weitere 29 Byte übermittelt werden. Ein Central kann auch eine Verbindung zu einem Peripheral herstellen  (connect) um die kompletten Daten auslesen zu können.
 

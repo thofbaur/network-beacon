@@ -49,7 +49,5 @@
 #include "main_int.h"
 #include "radio_int.h"
 
-
-
 #include "adjustable_params.h"
 

@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
+#include "fds.h"
 #include "ble.h"
 #include "ble_hci.h"
 #include "nrf_drv_config.h"  //board specific data, ToDo Alex: Durch AOM Board Daten ersetzen.
@@ -34,12 +34,13 @@
 #include "app_error.h"
 #include "led_softblink.h"
 #include "nrf_nvic.h"
+#include "fstorage.h"
 
 //#include "softdevice_handler.h"
 //#define GPIO_COUNT 1
 //#include "ble_nus.h"
 //#include "ble_conn_params.h"
-//#include "ble_advertising.h"
+#include "ble_advertising.h"
 //#include "ble_advdata.h"
 
 #include "common_defines.h"

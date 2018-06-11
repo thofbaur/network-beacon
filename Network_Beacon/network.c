@@ -27,18 +27,17 @@
 
 #include "network.h"
 
-typedef struct network_param_struct {
-	uint16_t limit_netz_flush;
-	uint8_t limit_netz;
-	uint16_t limit_timeout_contact;
-	int8_t limit_rssi;
-} network_param_struct;
+struct  {
+	uint16_t 	limit_netz_flush;
+	uint16_t 	limit_timeout_contact;
+	int8_t 		limit_rssi;
+	uint8_t 	limit_netz;
+	uint8_t		tracking_active;
+} params_network;
 
-network_param_struct params_network = {.limit_netz_flush = 1800, .limit_netz = NETWORK_CONTACTTIME, .limit_timeout_contact = NETWORK_TIMEOUT, .limit_rssi = NETWORK_LIMIT_RSSI};
 static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
 
-uint8_t tracking_active = INITIAL_MODE;
 #ifdef IDLIST
 
 static uint8_t  contact_tracker[MAX_NUM_TAGS-1][6];// Ctr 3 Byte;  Timeout 1 Byte, Contact Seen 1 Byte; Contact Active 1 Byte;
@@ -53,6 +52,12 @@ static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA];//MAC 6 Byte, St
 void network_init()
 {
 	uint16_t i;
+
+	params_network.limit_netz_flush = 1800;
+	params_network.limit_netz = NETWORK_CONTACTTIME;
+	params_network.limit_timeout_contact = NETWORK_TIMEOUT;
+	params_network.limit_rssi = NETWORK_LIMIT_RSSI;
+	params_network.tracking_active = INITIAL_MODE;
 
 #ifdef IDLIST
 	memset(&contact_tracker,0x00,(MAX_NUM_TAGS-1)*NETWORK_SIZEDATA);
@@ -242,14 +247,14 @@ void set_contact_active(const ble_gap_evt_t   * p_gap_evt)
 
 void network_set_tracking(uint8_t mode)
 {
-	tracking_active = mode;
+	params_network.tracking_active = mode;
 }
 
 void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)
 {
 	if( p_gap_evt->params.adv_report.rssi >= params_network.limit_rssi)
 	{
-		if(tracking_active)
+		if(params_network.tracking_active)
 			{
 				set_contact_active(p_gap_evt);
 			}
@@ -438,7 +443,7 @@ void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_TRACKING_ACTIVE:
 		{
-			tracking_active = (value1);
+			params_network.tracking_active = (value1);
 			break;
 		}
 		default:

@@ -65,23 +65,6 @@ void set_status_led(void)
 	APP_ERROR_CHECK(err_code);
 }
 
-#ifdef SIMULATEINFECTION
-void update_tag_status_infect(uint8_t status_infect)
-{
-	tag.status_infect = status_infect;
-}
-#endif
-
-void update_tag_inf_rev(uint8_t *p_inf_rev)
-{
-	tag.inf_rev = (*p_inf_rev)<<SHIFT_INF_REV;
-}
-
-void update_tag_status_data(uint8_t *p_status_data)
-{
-	tag.status_data = *p_status_data;
-}
-
 void update_beacon_info()
 {
 	uint8_t manuf_data[LENGTH_MANUF];
@@ -96,6 +79,25 @@ void update_beacon_info()
 	manuf_data[LENGTH_MANUF-1] = tag.status_batt | tag.status_data;
 	radio_update_adv(manuf_data);
 }
+
+#ifdef SIMULATEINFECTION
+void update_tag_status_infect(uint8_t status_infect)
+{
+	tag.status_infect = status_infect;
+}
+#endif
+
+void update_tag_inf_rev(uint8_t inf_rev)
+{
+	tag.inf_rev = (inf_rev)<<SHIFT_INF_REV;
+}
+
+void update_tag_status_data(uint8_t *p_status_data)
+{
+	tag.status_data = *p_status_data;
+}
+
+
 
 static void tag_init(void)
 {
@@ -279,7 +281,8 @@ uint8_t main_nus_send_time(ble_nus_t * p_nus)
 
 void sys_evt_dispatch(uint32_t sys_evt)
 {
-  //  ble_advertising_on_sys_evt(sys_evt);
+	fs_sys_event_handler(sys_evt);
+	ble_advertising_on_sys_evt(sys_evt);
 
 	if (sys_evt == NRF_EVT_POWER_FAILURE_WARNING)
 	{
@@ -331,23 +334,142 @@ static void led_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
+
+// Simple event handler to handle errors during initialization.
+static void fds_evt_handler(fds_evt_t const * const p_fds_evt)
+{
+    switch (p_fds_evt->id)
+    {
+        case FDS_EVT_INIT:
+            if (p_fds_evt->result != FDS_SUCCESS)
+            {
+                // Initialization failed.
+            }
+            break;
+        case FDS_EVT_GC:
+        	break;
+        default:
+            break;
+    }
+}
+
+#define FILE_ID     0x1111
+#define REC_KEY     0x2222
+//static uint32_t const m_deadbeef = 0xDEADBEEF;
+
+bool main_record_exists(uint16_t file_id, uint16_t key)
+{
+	fds_record_desc_t   record_desc;
+	ret_code_t ret;
+	fds_find_token_t    ftok;
+	memset(&ftok, 0x00, sizeof(fds_find_token_t));
+
+	ret = fds_record_find(file_id, key, &record_desc, &ftok);
+	if (ret == FDS_SUCCESS)
+	{
+		return true;
+	}
+	return false;
+}
+
+void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
+{
+	fds_record_t        record;
+	fds_record_desc_t   record_desc;
+	fds_record_chunk_t  record_chunk;
+	ret_code_t ret;
+	fds_find_token_t    ftok;
+
+	static uint32_t const m_deadbeef = 0x00000001;
+
+	memset(&ftok, 0x00, sizeof(fds_find_token_t));
+	// Set up data.
+	record_chunk.p_data         = &m_deadbeef;
+	record_chunk.length_words   = 1;
+//	record_chunk.p_data         = p_data;
+//	record_chunk.length_words   = sizeof(*p_data)/sizeof(uint32_t);
+
+	// Set up record.
+	record.file_id                  = file_id;
+	record.key               = key;
+	record.data.p_chunks     = &record_chunk;
+	record.data.num_chunks   = 1;
+
+
+	ret = fds_record_find(file_id, key, &record_desc, &ftok);
+	if (ret == FDS_SUCCESS)
+	{
+		ret = fds_record_update(&record_desc, &record);
+	}
+	else
+	{
+		ret = fds_record_write(&record_desc, &record);
+	}
+	if (ret ==FDS_ERR_NO_SPACE_IN_FLASH)
+	{
+		//execute garbage collection
+		fds_gc();
+	}
+	else if (ret != FDS_SUCCESS)
+	{
+		// Handle error.
+	}
+}
+
+void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
+{
+	fds_flash_record_t  flash_record;
+	fds_record_desc_t   record_desc;
+	fds_find_token_t    ftok;
+	memset(&ftok, 0x00, sizeof(fds_find_token_t));
+	// Loop until all records with the given key and file ID have been found.
+	while (fds_record_find(file_id, key, &record_desc, &ftok) == FDS_SUCCESS)
+	{
+	    if (fds_record_open(&record_desc, &flash_record) != FDS_SUCCESS)
+	    {
+	        // Handle error. FDS_ERR_NOT_FOUND
+	    }
+	    // Access the record through the flash_record structure.
+
+	    memcpy(p_data,flash_record.p_data,sizeof(*p_data));
+	    // Close the record when done.
+	    if (fds_record_close(&record_desc) != FDS_SUCCESS)
+	    {
+	        // Handle error.
+	    }
+	}
+}
+
+
+
+
+
+
 static void system_initialize(void)
 {
+	ret_code_t ret;
+
 	ble_stack_init();
 	led_init();
+	ret = fds_register(fds_evt_handler);
+	if (ret != FDS_SUCCESS)
+	{
+	    // Registering of the event handler has failed.
+	}
+	ret = fds_init();
+	if (ret != FDS_SUCCESS)
+	{
+	    // Handle error.
+	}
 	network_init();
 #ifdef SIMULATEINFECTION
 	infect_init(&tag);
 #endif
 	tag_init();
-    gap_params_init();
-    services_init();
-    advertising_init();
-    conn_params_init();
-    scan_init();
+	radio_params_init();
 
+	fds_gc();
 }
-
 
 
 int main(void)
