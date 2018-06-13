@@ -42,6 +42,7 @@ void infect_main(struct beacon *tag,uint32_t *time_counter);
 void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct beacon *p_tag,uint32_t *p_time_counter);
 void infect_reset_idx_read(void);
 void infect_set_infect(uint8_t mode);
+void infect_save_params(void);
 
 #endif
 #endif

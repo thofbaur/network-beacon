@@ -30,7 +30,7 @@
 
 /* Infection Paramters
  */
-#define INFECT_INITIAL_STATUS				STATUS_I
+#define INFECT_INITIAL_STATUS				STATUS_S
 
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
@@ -41,7 +41,7 @@
 #define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds TODO (SIS-Modell)
 #define INFECT_LIMIT_RSSI		 			-80 // approx. 1-2m distance
 
-#define INF_REV_INIT 				2
+#define INF_REV_INIT 				4
 
 /* Radio Parameters
  * ToDo

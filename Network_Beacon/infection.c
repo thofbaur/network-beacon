@@ -32,6 +32,7 @@
 uint8_t infect_array[LENGTH_INFECT_ARRAY][WIDTH_INFECT_ARRAY];
 uint8_t infect_source[WIDTH_INFECT_ARRAY-4];
 uint32_t infect_time;
+uint8_t	inf_params_to_save;
 
 static uint32_t timer_state = 0;
 
@@ -39,7 +40,7 @@ uint8_t idx_infect_read=0;
 static uint8_t kontakt_infect = 0;
 static uint8_t kontakt_heal = 0;
 
-static struct {
+ struct {
 	uint32_t limit_time_heal;
 	uint32_t limit_time_latency;
 	uint32_t limit_time_recovery;
@@ -85,6 +86,7 @@ void write_infect_array(struct beacon *p_tag)
 void infect_init(struct beacon *p_tag)
 {
 
+	bool ret;
 	params_infect.limit_time_heal = LIMIT_HEAL;
 	params_infect.limit_time_infect = LIMIT_INFECT;
 	params_infect.limit_time_latency = LIMIT_LATENCY;
@@ -95,9 +97,10 @@ void infect_init(struct beacon *p_tag)
 	params_infect.infect_limit_rssi = INFECT_LIMIT_RSSI;
 	params_infect.infect_status = INFECT_INITIAL_STATUS;
 	params_infect.infect_active = INITIAL_MODE;
-	if(main_record_exists(FILE_ID_INF,REC_KEY_INF1))
+	ret =main_record_exists(FILE_ID_INF,REC_KEY_INF1);
+	if(ret)
 	{
-		main_read_data(&params_infect.infect_revision,FILE_ID_INF,REC_KEY_INF1);
+		main_read_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
 	}
 	else
 	{
@@ -115,6 +118,19 @@ void infect_init(struct beacon *p_tag)
 	write_infect_array(p_tag);
 }
 
+void infect_save_params(void)
+{
+//	static uint8_t data[28];
+
+	if(inf_params_to_save ==1)
+	{
+//		memcpy(&data,&params_infect,sizeof(params_infect));
+		main_save_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
+		inf_params_to_save=0;
+	}
+
+
+}
 
 void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_counter)
 {
@@ -359,7 +375,8 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 				reset_source();
 				add_source(ID_ZENTRALE);
 				status_change(INFECT_INITIAL_STATUS,p_tag,p_time_counter);
-				main_save_data(&params_infect.infect_revision,FILE_ID_INF,REC_KEY_INF1);
+				inf_params_to_save=1;
+				infect_save_params();
 
 			}
 			break;

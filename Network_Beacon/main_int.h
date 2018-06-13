@@ -28,8 +28,8 @@ void update_tag_inf_rev(uint8_t inf_rev);
 void update_tag_status_data(uint8_t *p_status_data);
 void main_reset_time_sent(void);
 bool main_record_exists(uint16_t file_id, uint16_t key);
-void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key);
-void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key);
+void main_save_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
+void main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
 
 
 

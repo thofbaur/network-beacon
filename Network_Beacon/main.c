@@ -227,6 +227,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 					}
 				}
 			}
+			infect_save_params();
     	}
     	else if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_beacon[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_beacon[1] && \
@@ -353,9 +354,6 @@ static void fds_evt_handler(fds_evt_t const * const p_fds_evt)
     }
 }
 
-#define FILE_ID     0x1111
-#define REC_KEY     0x2222
-//static uint32_t const m_deadbeef = 0xDEADBEEF;
 
 bool main_record_exists(uint16_t file_id, uint16_t key)
 {
@@ -372,7 +370,7 @@ bool main_record_exists(uint16_t file_id, uint16_t key)
 	return false;
 }
 
-void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
+void main_save_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key)
 {
 	fds_record_t        record;
 	fds_record_desc_t   record_desc;
@@ -380,14 +378,12 @@ void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
 	ret_code_t ret;
 	fds_find_token_t    ftok;
 
-	static uint32_t const m_deadbeef = 0x00000001;
 
 	memset(&ftok, 0x00, sizeof(fds_find_token_t));
 	// Set up data.
-	record_chunk.p_data         = &m_deadbeef;
-	record_chunk.length_words   = 1;
-//	record_chunk.p_data         = p_data;
-//	record_chunk.length_words   = sizeof(*p_data)/sizeof(uint32_t);
+
+	record_chunk.p_data         = p_data;
+	record_chunk.length_words   = length;
 
 	// Set up record.
 	record.file_id                  = file_id;
@@ -416,7 +412,7 @@ void main_save_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
 	}
 }
 
-void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
+void main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key)
 {
 	fds_flash_record_t  flash_record;
 	fds_record_desc_t   record_desc;
@@ -431,7 +427,7 @@ void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
 	    }
 	    // Access the record through the flash_record structure.
 
-	    memcpy(p_data,flash_record.p_data,sizeof(*p_data));
+	    memcpy(p_data,flash_record.p_data,length);
 	    // Close the record when done.
 	    if (fds_record_close(&record_desc) != FDS_SUCCESS)
 	    {
@@ -439,11 +435,6 @@ void main_read_data(uint16_t *p_data, uint16_t file_id, uint16_t key)
 	    }
 	}
 }
-
-
-
-
-
 
 static void system_initialize(void)
 {

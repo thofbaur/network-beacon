@@ -46,7 +46,7 @@ static uint8_t raw_advdata[30] = {
 //		P_TIME_RECOVER		, ((9000 >>14) & 0xFF)	,((9000 >> 6) & 0xFF),
 //		P_TIME_SUSCEPT		, ((10000 >>14) & 0xFF)	,((10000 >> 6) & 0xFF),
 		//P_CHANGE_STATUS		,0						,0,
-		P_INF_REV,1,0,
+		P_INF_REV,3,0,
 		P_NULL,0,0
 
 };
