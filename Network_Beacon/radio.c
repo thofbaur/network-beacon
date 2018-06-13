@@ -44,8 +44,33 @@ struct {
 	uint8_t		mode;
 } params_radio;
 
+bool	radio_params_to_save=0;
+bool radio_params_hardcoded=0;
+#define FILE_ID_RADIO     0x9001
+#define REC_KEY_RADIO	    0x9001
 
 
+void set_radio_params_init(void)
+{
+	params_radio.adv_interval 			= CONNECTABLE_ADV_INTERVAL;
+	params_radio.adv_interval_passive 	= CONNECTABLE_ADV_INTERVAL_PASSIVE;
+	params_radio.scan_interval 			= (uint16_t)SCAN_INTERVAL;
+	params_radio.scan_interval_passive 	= (uint16_t)SCAN_INTERVAL_PASSIVE;
+	params_radio.scan_window 			= (uint16_t)SCAN_WINDOW;
+	params_radio.scan_window_passive 	= (uint16_t)SCAN_WINDOW_PASSIVE;
+	params_radio.mode 					= INITIAL_MODE;
+	radio_params_hardcoded = 1;
+}
+
+void radio_save_params(void)
+{
+
+	if(radio_params_to_save ==1)
+	{
+		main_save_data(&params_radio,sizeof(params_radio),FILE_ID_RADIO,REC_KEY_RADIO);
+		radio_params_to_save=0;
+	}
+}
 
 void advertising_start(void)
 {
@@ -532,16 +557,106 @@ uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length)
 
 void radio_params_init(void)
 {
-	params_radio.adv_interval = CONNECTABLE_ADV_INTERVAL;
-	params_radio.adv_interval_passive = CONNECTABLE_ADV_INTERVAL_PASSIVE;
-	params_radio.scan_interval = (uint16_t)SCAN_INTERVAL;
-	params_radio.scan_interval_passive = (uint16_t)SCAN_INTERVAL_PASSIVE;
-	params_radio.scan_window =(uint16_t)SCAN_WINDOW;
-	params_radio.scan_window_passive = (uint16_t)SCAN_WINDOW_PASSIVE;
-	params_radio.mode = INITIAL_MODE;
+	bool ret;
+
+		ret =main_read_data(&params_radio,sizeof(params_radio),FILE_ID_RADIO,REC_KEY_RADIO);
+		if(ret)
+		{
+			// stored params have been loaded
+		}
+		else
+		{
+			// set hardcoded values
+			set_radio_params_init();
+			radio_params_to_save=1;
+			radio_save_params();
+
+		}
 	gap_params_init();
 	services_init();
 	advertising_init();
 	conn_params_init();
 	scan_init();
 }
+
+void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
+{
+	switch (switch_param)
+	{
+
+		case P_ADV_INTERVAL:
+		{
+			if(params_radio.adv_interval != (value1<<8) + value2)
+			{
+			params_radio.adv_interval = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_ADV_INTERVAL_PASSIVE:
+		{
+			if(params_radio.adv_interval_passive != (value1<<8) + value2)
+			{
+			params_radio.adv_interval_passive = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_SCAN_INTERVAL:
+		{
+			if(params_radio.scan_interval != (value1<<8) + value2)
+			{
+			params_radio.scan_interval = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_SCAN_INTERVAL_PASSIVE:
+		{
+			if(params_radio.scan_interval_passive != (value1<<8) + value2)
+			{
+			params_radio.scan_interval_passive = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_SCAN_WINDOW:
+		{
+			if(params_radio.scan_window != (value1<<8) + value2)
+			{
+			params_radio.scan_window = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_SCAN_WINDOW_PASSIVE:
+		{
+			if(params_radio.scan_window_passive != (value1<<8) + value2)
+			{
+			params_radio.scan_window_passive = (value1<<8) + value2 ;
+			radio_params_to_save=1;
+			radio_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_RADIO_RESET_PARAMS:
+		{
+			if(!radio_params_hardcoded)
+			{
+				set_radio_params_init();
+				radio_params_to_save=1;
+				break;
+			}
+			break;
+		}
+		default:
+		break;
+	}
+}
+
+

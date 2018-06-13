@@ -163,7 +163,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 					param = p_gap_evt->params.adv_report.data[i] & 0xE0;
 					switch (param)
 					{
-						case 0x20:
+						case P_BASE_MAIN:
 						{
 							//set a general parameter
 							switch (p_gap_evt->params.adv_report.data[i] )
@@ -207,16 +207,15 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 							}
 							break;
 						}
-#ifdef SIMULATEINFECTION
-						case 0x40:
+						#ifdef SIMULATEINFECTION
+						case P_BASE_INF:
 						{
 							//set an infection parameter
-
 							infect_control( (p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
 							break;
 						}
-#endif
-						case 0x80:
+						#endif
+						case P_BASE_NETWORK:
 						{
 							//set a network parameter
 							network_control((p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
@@ -228,15 +227,16 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 				}
 			}
 			infect_save_params();
+			network_save_params();
+			radio_save_params();
     	}
     	else if(	p_gap_evt->params.adv_report.data[POS_NAME_START] == search_beacon[0] && \
     		p_gap_evt->params.adv_report.data[POS_NAME_START+1] == search_beacon[1] && \
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_beacon[2] )
     	{
-
-#ifdef SIMULATEINFECTION
+			#ifdef SIMULATEINFECTION
     		infect_evaluate_contact(&tag,p_gap_evt);
-#endif
+			#endif
     		network_evaluate_contact(p_gap_evt);
     	}
 }
@@ -412,11 +412,14 @@ void main_save_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key
 	}
 }
 
-void main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key)
+bool main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key)
 {
 	fds_flash_record_t  flash_record;
 	fds_record_desc_t   record_desc;
 	fds_find_token_t    ftok;
+	bool	retval;
+
+	retval = false;
 	memset(&ftok, 0x00, sizeof(fds_find_token_t));
 	// Loop until all records with the given key and file ID have been found.
 	while (fds_record_find(file_id, key, &record_desc, &ftok) == FDS_SUCCESS)
@@ -428,12 +431,14 @@ void main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key
 	    // Access the record through the flash_record structure.
 
 	    memcpy(p_data,flash_record.p_data,length);
+	    retval = true;
 	    // Close the record when done.
 	    if (fds_record_close(&record_desc) != FDS_SUCCESS)
 	    {
 	        // Handle error.
 	    }
 	}
+	return retval;
 }
 
 static void system_initialize(void)

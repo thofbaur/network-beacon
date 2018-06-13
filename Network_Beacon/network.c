@@ -38,6 +38,11 @@ struct  {
 static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
 
+bool	net_params_to_save=0;
+bool net_params_hardcoded=0;
+#define FILE_ID_NET     0x8001
+#define REC_KEY_NET	    0x8001
+
 #ifdef IDLIST
 
 static uint8_t  contact_tracker[MAX_NUM_TAGS-1][6];// Ctr 3 Byte;  Timeout 1 Byte, Contact Seen 1 Byte; Contact Active 1 Byte;
@@ -48,16 +53,45 @@ static uint8_t  contact_list[LENGTH_CONTACT_LIST][12]; //MAC 6 Byte, Ctr 3 Byte;
 static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA];//MAC 6 Byte, Start Ctr 3 Byte;Duration 2 Byte
 #endif
 
-
-void network_init()
+void set_net_params_init(void)
 {
-	uint16_t i;
-
 	params_network.limit_netz_flush = 1800;
 	params_network.limit_netz = NETWORK_CONTACTTIME;
 	params_network.limit_timeout_contact = NETWORK_TIMEOUT;
 	params_network.limit_rssi = NETWORK_LIMIT_RSSI;
 	params_network.tracking_active = INITIAL_MODE;
+	net_params_hardcoded = 1;
+}
+
+void network_save_params(void)
+{
+
+	if(net_params_to_save ==1)
+	{
+		main_save_data(&params_network,sizeof(params_network),FILE_ID_NET,REC_KEY_NET);
+		net_params_to_save=0;
+	}
+}
+
+void network_init()
+{
+	uint16_t i;
+
+	bool ret;
+
+	ret =main_read_data(&params_network,sizeof(params_network),FILE_ID_NET,REC_KEY_NET);
+	if(ret)
+	{
+		// stored params have been loaded
+	}
+	else
+	{
+		// set hardcoded values
+		set_net_params_init();
+		net_params_to_save=1;
+		network_save_params();
+
+	}
 
 #ifdef IDLIST
 	memset(&contact_tracker,0x00,(MAX_NUM_TAGS-1)*NETWORK_SIZEDATA);
@@ -414,7 +448,6 @@ void network_main(uint32_t *p_time_counter)
 
 }
 
-
 void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 {
 	switch (switch_param)
@@ -422,28 +455,62 @@ void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 
 		case P_TIME_FLUSH:
 		{
+			if(params_network.limit_netz_flush != (value1<<8) + value2)
+			{
 			params_network.limit_netz_flush = (value1<<8) + value2 ;
+			net_params_to_save=1;
+			net_params_hardcoded=0;
+			}
 			break;
 		}
 		case P_TIME_NETWORK:
 		{
-			params_network.limit_netz = (value1<<(8)) + (value2<<0);
+			if(params_network.limit_netz != (value1<<(8)) + (value2<<0))
+			{
+				params_network.limit_netz = (value1<<(8)) + (value2<<0);
+				net_params_to_save=1;
+				net_params_hardcoded=0;
+			}
 			break;
 		}
 		case P_TIMEOUT_NETWORK:
 		{
-			params_network.limit_timeout_contact = (value1<<8) + value2;
-
+			if(params_network.limit_timeout_contact != (value1<<8) + value2)
+			{
+				params_network.limit_timeout_contact = (value1<<8) + value2;
+				net_params_to_save=1;
+				net_params_hardcoded=0;
+			}
 			break;
 		}
 		case P_RSSI_NETWORK:
 		{
-			params_network.limit_rssi = value1 ;
+			if(params_network.limit_rssi != value1)
+			{
+				params_network.limit_rssi = value1 ;
+				net_params_to_save=1;
+				net_params_hardcoded=0;
+			}
 			break;
 		}
 		case P_TRACKING_ACTIVE:
 		{
-			params_network.tracking_active = (value1);
+			if(params_network.tracking_active != (value1))
+			{
+				params_network.tracking_active = (value1);
+				net_params_to_save=1;
+				net_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_NET_RESET_PARAMS:
+		{
+			if(!net_params_hardcoded)
+			{
+				set_net_params_init();
+				net_params_to_save=1;
+				break;
+			}
 			break;
 		}
 		default:

@@ -28,14 +28,10 @@
 #include "ble_nus.h"
 
 void radio_params_init(void);
-//void scan_init(void);
-//void advertising_init(void);
 void scan_start(void);
 void advertising_start(void);
-//void gap_params_init(void);
-//void conn_params_init(void);
 void ble_stack_init(void);
-//void services_init(void);
 void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF]);
 uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length);
 void radio_set_beacon_mode(uint8_t mode);
+void radio_save_params(void);

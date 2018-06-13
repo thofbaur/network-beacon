@@ -32,7 +32,8 @@
 uint8_t infect_array[LENGTH_INFECT_ARRAY][WIDTH_INFECT_ARRAY];
 uint8_t infect_source[WIDTH_INFECT_ARRAY-4];
 uint32_t infect_time;
-uint8_t	inf_params_to_save;
+
+
 
 static uint32_t timer_state = 0;
 
@@ -41,18 +42,21 @@ static uint8_t kontakt_infect = 0;
 static uint8_t kontakt_heal = 0;
 
  struct {
-	uint32_t limit_time_heal;
-	uint32_t limit_time_latency;
 	uint32_t limit_time_recovery;
 	uint32_t limit_time_suscept;
-	uint16_t limit_timeout_contact_infect; // 65 sekunden
-	uint16_t limit_timeout_kontakt_heal; // 65 sekunden
-	uint16_t	infect_revision;
 	uint16_t limit_time_infect; //10 Minuten
+	uint16_t limit_time_heal;
+	uint16_t limit_time_latency;
+	uint16_t limit_timeout_contact_infect; // 65 sekunden
+	uint16_t limit_timeout_contact_heal; // 65 sekunden
+	uint16_t	infect_revision;
 	int8_t 	infect_limit_rssi;
 	uint8_t	infect_status;
 	uint8_t	infect_active;
 } params_infect;
+
+bool	inf_params_to_save=0;
+bool inf_params_hardcoded=0;
 
 #define FILE_ID_INF     0x4001
 #define REC_KEY_INF1    0x4001
@@ -83,30 +87,49 @@ void write_infect_array(struct beacon *p_tag)
 	}
 }
 
-void infect_init(struct beacon *p_tag)
-{
 
-	bool ret;
+void set_inf_params_init(void)
+{
 	params_infect.limit_time_heal = LIMIT_HEAL;
 	params_infect.limit_time_infect = LIMIT_INFECT;
 	params_infect.limit_time_latency = LIMIT_LATENCY;
 	params_infect.limit_time_recovery = LIMIT_RECOVERY;
 	params_infect.limit_time_suscept = LIMIT_SUSCEPT;
 	params_infect.limit_timeout_contact_infect = INFECT_TIMEOUT;
-	params_infect.limit_timeout_kontakt_heal = HEAL_TIMEOUT;
+	params_infect.limit_timeout_contact_heal = HEAL_TIMEOUT;
 	params_infect.infect_limit_rssi = INFECT_LIMIT_RSSI;
 	params_infect.infect_status = INFECT_INITIAL_STATUS;
 	params_infect.infect_active = INITIAL_MODE;
-	ret =main_record_exists(FILE_ID_INF,REC_KEY_INF1);
+	params_infect.infect_revision = INF_REV_INIT;
+	inf_params_hardcoded=1;
+}
+
+void infect_save_params(void)
+{
+
+	if(inf_params_to_save ==1)
+	{
+		main_save_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
+		inf_params_to_save=0;
+	}
+}
+
+void infect_init(struct beacon *p_tag)
+{
+
+	bool ret;
+
+	ret =main_read_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
 	if(ret)
 	{
-		main_read_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
+		// stored params have been loaded
 	}
 	else
 	{
-		params_infect.infect_revision = INF_REV_INIT;
-//
-
+		// set hardcoded values
+		set_inf_params_init();
+		inf_params_to_save=1;
+		infect_save_params();
 	}
 
 
@@ -118,19 +141,7 @@ void infect_init(struct beacon *p_tag)
 	write_infect_array(p_tag);
 }
 
-void infect_save_params(void)
-{
-//	static uint8_t data[28];
 
-	if(inf_params_to_save ==1)
-	{
-//		memcpy(&data,&params_infect,sizeof(params_infect));
-		main_save_data(&params_infect,sizeof(params_infect),FILE_ID_INF,REC_KEY_INF1);
-		inf_params_to_save=0;
-	}
-
-
-}
 
 void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_counter)
 {
@@ -267,12 +278,12 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			time_kontakt_heal = 0;
 			kontakt_heal = 0;
 		}else {
-			if(time_kontakt_heal < params_infect.limit_timeout_kontakt_heal )
+			if(time_kontakt_heal < params_infect.limit_timeout_contact_heal )
 			{
 				time_kontakt_heal +=MAIN_SAMPLE_RATE;
 			}
 		}
-		if( time_kontakt_heal < params_infect.limit_timeout_kontakt_heal ) {
+		if( time_kontakt_heal < params_infect.limit_timeout_contact_heal ) {
 			timer_heal +=MAIN_SAMPLE_RATE;
 		}else {
 			timer_heal = 0;
@@ -323,49 +334,33 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			}
 			break;
 		}
-		case P_TIME_INFECT:
-		{
-			params_infect.limit_time_infect = (value1<<8) + value2 ;
-			break;
-		}
-		case P_TIME_LATENCY:
-		{
-			params_infect.limit_time_latency = (value1<<(8+SHIFT_P_TIME_LATENCY)) + (value2<<SHIFT_P_TIME_LATENCY);
-			break;
-		}
-		case P_TIME_RECOVER:
-		{
-			params_infect.limit_time_recovery =  (value1<<(8+SHIFT_P_TIME_RECOVER)) + (value2<<SHIFT_P_TIME_RECOVER);
-			break;
-		}
-		case P_TIME_SUSCEPT:
-		{
-			params_infect.limit_time_suscept =  (value1<<(8+SHIFT_P_TIME_SUSCEPT)) + (value2<<SHIFT_P_TIME_SUSCEPT);
-			break;
-		}
-		case P_TIMEOUT_INFECT:
-		{
-			params_infect.limit_timeout_contact_infect = (value1<<8) + value2;
-			params_infect.limit_timeout_kontakt_heal =  params_infect.limit_timeout_contact_infect;
-			break;
-		}
-		case P_RSSI_INFECT:
-		{
-			params_infect.infect_limit_rssi = value1 ;
-			break;
-		}
 		case P_CHANGE_STATUS:
 		{
-			kontakt_infect = 0;
-			kontakt_heal = 0;
-			reset_source();
-			add_source(ID_ZENTRALE);
-			status_change(value1,p_tag,p_time_counter);
+			if(p_tag->status_infect !=value1)
+			{
+				kontakt_infect = 0;
+				kontakt_heal = 0;
+				reset_source();
+				add_source(ID_ZENTRALE);
+				status_change(value1,p_tag,p_time_counter);
+				inf_params_to_save =1;
+				inf_params_hardcoded=0;
+			}
 			break;
 		}
+		case P_INF_RESET_PARAMS:
+		{
+			if(!inf_params_hardcoded)
+			{
+				set_inf_params_init();
+				inf_params_to_save=1;
+			}
+			break;
+		}
+
 		case P_INF_REV:
 		{
-			if (p_tag->inf_rev != ( value1<<SHIFT_INF_REV) )
+			if (params_infect.infect_revision != value1 )
 			{
 				params_infect.infect_revision = value1;
 				update_tag_inf_rev(params_infect.infect_revision);
@@ -376,13 +371,108 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 				add_source(ID_ZENTRALE);
 				status_change(INFECT_INITIAL_STATUS,p_tag,p_time_counter);
 				inf_params_to_save=1;
-				infect_save_params();
+				inf_params_hardcoded=0;
+			}
+			break;
+		}
 
+		case P_TIME_INFECT:
+		{
+			if (params_infect.limit_time_infect != (value1<<8) + value2)
+			{
+				params_infect.limit_time_infect = (value1<<8) + value2 ;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_TIME_HEAL:
+		{
+			if (params_infect.limit_time_heal != (value1<<8) + value2)
+			{
+				params_infect.limit_time_heal = (value1<<8) + value2 ;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_TIME_LATENCY:
+		{
+			if ( params_infect.limit_time_latency != (value1<<(8+SHIFT_P_TIME_LATENCY)) + (value2<<SHIFT_P_TIME_LATENCY))
+			{
+				params_infect.limit_time_latency = (value1<<(8+SHIFT_P_TIME_LATENCY)) + (value2<<SHIFT_P_TIME_LATENCY);
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+
+			}
+
+			break;
+		}
+		case P_TIME_RECOVER:
+		{
+			if (params_infect.limit_time_recovery !=  (value1<<(8+SHIFT_P_TIME_RECOVER)) + (value2<<SHIFT_P_TIME_RECOVER))
+			{
+				params_infect.limit_time_recovery =  (value1<<(8+SHIFT_P_TIME_RECOVER)) + (value2<<SHIFT_P_TIME_RECOVER);
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+
+			break;
+		}
+		case P_TIME_SUSCEPT:
+		{
+			if(params_infect.limit_time_suscept !=  (value1<<(8+SHIFT_P_TIME_SUSCEPT)) + (value2<<SHIFT_P_TIME_SUSCEPT))
+			{
+				params_infect.limit_time_suscept =  (value1<<(8+SHIFT_P_TIME_SUSCEPT)) + (value2<<SHIFT_P_TIME_SUSCEPT);
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_TIMEOUT_INFECT:
+		{
+			if(params_infect.limit_timeout_contact_infect != (value1<<8) + value2)
+			{
+				params_infect.limit_timeout_contact_infect = (value1<<8) + value2;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+
+			break;
+		}
+		case P_TIMEOUT_HEAL:
+		{
+			if(params_infect.limit_timeout_contact_heal != (value1<<8) + value2)
+			{
+				params_infect.limit_timeout_contact_heal =  params_infect.limit_timeout_contact_infect;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+
+			break;
+		}
+		case P_RSSI_INFECT:
+		{
+			if (params_infect.infect_limit_rssi != value1)
+			{
+				params_infect.infect_limit_rssi = value1 ;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
+			}
+			break;
+		}
+		case P_SET_INF_ACTIVE:
+		{
+			if (params_infect.infect_active != value1)
+			{
+				params_infect.infect_active = value1 ;
+				inf_params_to_save=1;
+				inf_params_hardcoded=0;
 			}
 			break;
 		}
 		default:
-		break;
+			break;
 	}
 }
 

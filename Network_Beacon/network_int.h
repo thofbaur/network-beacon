@@ -38,5 +38,5 @@ void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt);
 void network_main(uint32_t *p_time_counter);
 void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2);
 void network_set_tracking(uint8_t mode);
-
+void network_save_params(void);
 #endif

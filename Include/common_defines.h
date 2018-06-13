@@ -48,30 +48,54 @@
  *
  */
 #define P_NULL				0
-#define P_SHOW_STATUS		0x20+8
-#define P_SET_BEACON_MODE	0x20+1
-#define P_BOOTLOADER		0x20+2
+// Param_Base_Mask = 0xE0 -> Lowest Possible Base = 0x20
+#define P_BASE_MAIN			0x20
+#define P_BASE_INF			0x40
+#define P_BASE_NETWORK		0x80
+#define P_BASE_RADIO		0x90
+
+#define P_SHOW_STATUS		P_BASE_MAIN+8
+#define P_SET_BEACON_MODE	P_BASE_MAIN+1
+#define P_BOOTLOADER		P_BASE_MAIN+2
 
 // Defines for Infect Parameters should be in one block
-#define P_RESET_INFECT		0x40+1
-#define P_TIME_INFECT		0x40+2
-#define SHIFT_P_TIME_INFECT	0
-#define	P_TIME_LATENCY		0x40+3
-#define SHIFT_P_TIME_LATENCY	6
-#define	P_TIME_RECOVER		0x40+4
+
+#define P_RESET_INFECT		P_BASE_INF+1
+#define P_TIME_INFECT		P_BASE_INF+2
+#define P_TIME_HEAL			P_BASE_INF+11
+#define SHIFT_P_TIME_INFECT		0
+#define	P_TIME_LATENCY		P_BASE_INF+3
+#define SHIFT_P_TIME_LATENCY	0
+#define	P_TIME_RECOVER		P_BASE_INF+4
 #define SHIFT_P_TIME_RECOVER	6
-#define	P_TIME_SUSCEPT		0x40+5
+#define	P_TIME_SUSCEPT		P_BASE_INF+5
 #define SHIFT_P_TIME_SUSCEPT	6
-#define P_TIMEOUT_INFECT	0x40+6
-#define P_RSSI_INFECT		0x40+7
-#define P_CHANGE_STATUS		0x40+9
-#define P_INF_REV			0x40+10
+#define P_TIMEOUT_INFECT	P_BASE_INF+6
+#define P_TIMEOUT_HEAL		P_BASE_INF+7
+#define P_RSSI_INFECT		P_BASE_INF+8
+#define P_CHANGE_STATUS		P_BASE_INF+9
+#define P_INF_REV			P_BASE_INF+10
+#define P_INF_RESET_PARAMS	P_BASE_INF+12
+#define P_SET_INF_ACTIVE	P_BASE_INF+13
 // Defines for Network Parameters should be in one block
-#define P_TIME_NETWORK		0x80+1
-#define P_TIMEOUT_NETWORK	0x80+2
-#define P_TIME_FLUSH		0x80+3
-#define P_RSSI_NETWORK		0x80+4
-#define P_TRACKING_ACTIVE 	0x80+11
+
+#define P_TIME_NETWORK		P_BASE_NETWORK+1
+#define P_TIMEOUT_NETWORK	P_BASE_NETWORK+2
+#define P_TIME_FLUSH		P_BASE_NETWORK+3
+#define P_RSSI_NETWORK		P_BASE_NETWORK+4
+#define P_TRACKING_ACTIVE 	P_BASE_NETWORK+11
+#define P_NET_RESET_PARAMS 	P_BASE_NETWORK+12
+
+// Defines for Radio Parameters should be in one block
+
+#define P_ADV_INTERVAL			P_BASE_RADIO+1
+#define P_ADV_INTERVAL_PASSIVE	P_BASE_RADIO+2
+#define P_SCAN_INTERVAL			P_BASE_RADIO+3
+#define P_SCAN_INTERVAL_PASSIVE	P_BASE_RADIO+4
+#define P_SCAN_WINDOW			P_BASE_RADIO+5
+#define P_SCAN_WINDOW_PASSIVE	P_BASE_RADIO+6
+#define P_RADIO_RESET_PARAMS	P_BASE_RADIO+12
+
 
 #define MAX_NUM_TAGS		128
 #define ID_ZENTRALE		128
