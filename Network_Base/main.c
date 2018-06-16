@@ -93,9 +93,9 @@ static uint8_t identifier[3] = PERIPHERAL_DEVICE_NAME;  //DSA
 #endif
 static uint16_t  m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 
-#define LENGTH_UART_BUFFER (LENGTH_DATA_BUFFER >> 2)+20 //ToDo Set correct size of uart buffer
+#define LENGTH_UART_BUFFER (LENGTH_DATA_BUFFER >> 2)+20 // Set correct size of uart buffer
 
-static uint8_t data_array[LENGTH_UART_BUFFER][21]; //ToDo Set Correct size
+static uint8_t data_array[LENGTH_UART_BUFFER][21]; // Set Correct size
 static uint16_t idx_read=0;
 static uint16_t idx_write=0;
 static uint8_t uart_active = 0;
@@ -206,7 +206,7 @@ static void uart_send_data( )
 	};
 #endif
 
-	if( p_data[20] == 4) // ToDo set correct size
+	if( p_data[20] == 4) //  set correct size
 	{
 		time_current = ((uint32_t)p_data[0])<<16;
 		time_current |= ((uint32_t)p_data[1])<<8;
@@ -219,7 +219,7 @@ static void uart_send_data( )
 //		printf("Status: %1u \r\n", p_data[2]);
 	}
 #ifdef SIMULATEINFECTION
-	else if( p_data[20] == WIDTH_INFECT_ARRAY)  // ToDo set correct size
+	else if( p_data[20] == WIDTH_INFECT_ARRAY)  //  set correct size
 	{
 		time_infect = ((uint16_t)p_data[1])<<16;
 		time_infect |= ((uint16_t)p_data[2])<<8;
@@ -234,7 +234,7 @@ static void uart_send_data( )
 
 	}
 #endif
-	else if( p_data[20] == NETWORK_SIZEDATA ||  p_data[20] == 2* NETWORK_SIZEDATA || p_data[20]==3* NETWORK_SIZEDATA|| p_data[20]==4* NETWORK_SIZEDATA )  // ToDo set correct size
+	else if( p_data[20] == NETWORK_SIZEDATA ||  p_data[20] == 2* NETWORK_SIZEDATA || p_data[20]==3* NETWORK_SIZEDATA|| p_data[20]==4* NETWORK_SIZEDATA )  //  set correct size
 	{
 		for(i=0;NETWORK_SIZEDATA*i<p_data[20] ;i++)
 		{

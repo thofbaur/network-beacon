@@ -53,6 +53,8 @@ static uint8_t kontakt_heal = 0;
 	int8_t 	infect_limit_rssi;
 	uint8_t	infect_status;
 	uint8_t	infect_active;
+	uint8_t show_status_led;
+
 } params_infect;
 
 bool	inf_params_to_save=0;
@@ -88,6 +90,29 @@ void write_infect_array(struct beacon *p_tag)
 }
 
 
+void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_counter)
+{
+//	uint8_t i;
+//    uint32_t       err_code;
+
+	if(p_tag->status_infect == status_new)
+	{
+		//do nothing
+	}else
+	{
+		infect_time = *time_counter;
+		params_infect.infect_status = status_new;
+		update_tag_status_infect(status_new);
+
+		write_infect_array(p_tag);
+		reset_source();
+		set_status_led(&params_infect.show_status_led);
+		timer_state = 0;
+	}
+	update_beacon_info();
+
+}
+
 void set_inf_params_init(void)
 {
 	params_infect.limit_time_heal = LIMIT_HEAL;
@@ -101,7 +126,10 @@ void set_inf_params_init(void)
 	params_infect.infect_status = INFECT_INITIAL_STATUS;
 	params_infect.infect_active = INITIAL_MODE;
 	params_infect.infect_revision = INF_REV_INIT;
+	params_infect.show_status_led = INIT_SHOW_STATUS_LED;
 	inf_params_hardcoded=1;
+	update_tag_inf_rev(params_infect.infect_revision);
+
 }
 
 void infect_save_params(void)
@@ -137,34 +165,13 @@ void infect_init(struct beacon *p_tag)
 
 	update_tag_status_infect(params_infect.infect_status);
 	update_tag_inf_rev(params_infect.infect_revision);
+	set_status_led(&params_infect.show_status_led);
+
 	reset_source();
 	write_infect_array(p_tag);
 }
 
 
-
-void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_counter)
-{
-//	uint8_t i;
-//    uint32_t       err_code;
-
-	if(p_tag->status_infect == status_new)
-	{
-		//do nothing
-	}else
-	{
-		infect_time = *time_counter;
-		params_infect.infect_status = status_new;
-		update_tag_status_infect(status_new);
-
-		write_infect_array(p_tag);
-		reset_source();
-		set_status_led();
-		timer_state = 0;
-	}
-	update_beacon_info();
-
-}
 
 
 
@@ -272,20 +279,33 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			time_kontakt = 0;
 		}
 	}
+	if(p_tag->status_infect == STATUS_L)
+	{
+		if(timer_state > params_infect.limit_time_latency )
+		{
+			status_change(STATUS_I,p_tag,time_counter);
+		}
+	}
 	if( p_tag->status_infect == STATUS_I)
 	{
-		if( kontakt_heal==1) {
+		if( kontakt_heal==1)
+		{
 			time_kontakt_heal = 0;
 			kontakt_heal = 0;
-		}else {
+		}
+		else
+		{
 			if(time_kontakt_heal < params_infect.limit_timeout_contact_heal )
 			{
 				time_kontakt_heal +=MAIN_SAMPLE_RATE;
 			}
 		}
-		if( time_kontakt_heal < params_infect.limit_timeout_contact_heal ) {
+		if( time_kontakt_heal < params_infect.limit_timeout_contact_heal )
+		{
 			timer_heal +=MAIN_SAMPLE_RATE;
-		}else {
+		}
+		else
+		{
 			timer_heal = 0;
 		}
 		if( timer_heal	> params_infect.limit_time_heal )
@@ -297,13 +317,7 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 		}
 	}
 
-	if(p_tag->status_infect == STATUS_L)
-	{
-		if(timer_state > params_infect.limit_time_latency )
-		{
-			status_change(STATUS_I,p_tag,time_counter);
-		}
-	}
+
 	if(p_tag->status_infect == STATUS_I)
 	{
 		if(timer_state > params_infect.limit_time_recovery  )
@@ -353,6 +367,9 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			if(!inf_params_hardcoded)
 			{
 				set_inf_params_init();
+				status_change(params_infect.infect_status,p_tag,p_time_counter);
+
+				update_beacon_info();
 				inf_params_to_save=1;
 			}
 			break;
@@ -469,6 +486,14 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 				inf_params_to_save=1;
 				inf_params_hardcoded=0;
 			}
+			break;
+		}
+		case P_SHOW_STATUS:
+		{
+			params_infect.show_status_led = value1;
+			inf_params_to_save=1;
+			inf_params_hardcoded=0;
+			set_status_led(&params_infect.show_status_led);
 			break;
 		}
 		default:

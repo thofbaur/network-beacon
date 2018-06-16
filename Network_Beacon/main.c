@@ -24,7 +24,6 @@ APP_TIMER_DEF(m_main_timer_id);
 
 
 static uint8_t led_status = LED_RGB_GREEN;
-static uint8_t show_status_led = INIT_SHOW_STATUS_LED;
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 struct beacon tag ;
 
@@ -34,12 +33,12 @@ const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
 const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
 
 
-void set_status_led(void)
+void set_status_led(uint8_t * p_show_status_led)
 {
 	uint32_t err_code;
 	err_code = led_softblink_stop();
 	APP_ERROR_CHECK(err_code);
-	if( show_status_led == 1)
+	if( *p_show_status_led == 1)
 	{
 #ifdef SIMULATEINFECTION
 		switch(tag.status_infect)
@@ -134,7 +133,6 @@ static void tag_init(void)
 	}
 #endif
 
-	set_status_led();
 }
 
 
@@ -168,12 +166,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 							//set a general parameter
 							switch (p_gap_evt->params.adv_report.data[i] )
 							{
-								case P_SHOW_STATUS:
-								{
-									show_status_led = p_gap_evt->params.adv_report.data[i+1];
-									set_status_led();
-									break;
-								}
+
 								case P_BOOTLOADER:
 								{
 								   //  Write to the the GPREGRET REGISTER and reset the chip
@@ -219,6 +212,12 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 						{
 							//set a network parameter
 							network_control((p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
+							break;
+						}
+						case P_BASE_RADIO:
+						{
+							//set a radio parameter
+							radio_control((p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2]);
 							break;
 						}
 						default:

@@ -272,7 +272,7 @@ void set_contact_active(const ble_gap_evt_t   * p_gap_evt)
 					}
 				}
 		// overwrite oldest entry with new entry
-		//ToDo check this entry if to be written in data buffer
+		// check this entry if to be written in data buffer
 		memcpy(contact_list[temp],p_gap_evt->params.connected.peer_addr.addr,6);
 		contact_list[temp][9]=1;
 	}
@@ -452,6 +452,7 @@ void network_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 {
 	switch (switch_param)
 	{
+
 
 		case P_TIME_FLUSH:
 		{

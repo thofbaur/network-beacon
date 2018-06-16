@@ -165,10 +165,10 @@ void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
 
 void radio_set_beacon_mode(uint8_t mode)
 {
-	uint8_t mode_old = 2;
+
 	uint32_t err_code;
 
-	if(mode == mode_old)
+	if(mode == params_radio.mode)
 	{
 		//do nothing
 	}
@@ -178,12 +178,11 @@ void radio_set_beacon_mode(uint8_t mode)
 		APP_ERROR_CHECK(err_code);
 		err_code =  sd_ble_gap_scan_stop();
 		APP_ERROR_CHECK(err_code);
-
-		set_ble_params(mode);
+		params_radio.mode = mode;
+		set_ble_params(params_radio.mode);
 
 		advertising_start();
 		scan_start();
-		mode_old = mode;
 	}
 }
 
@@ -586,9 +585,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 
 		case P_ADV_INTERVAL:
 		{
-			if(params_radio.adv_interval != (value1<<8) + value2)
+			if(  params_radio.adv_interval != MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.adv_interval = (value1<<8) + value2 ;
+			params_radio.adv_interval = MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS) ;
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -596,9 +595,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_ADV_INTERVAL_PASSIVE:
 		{
-			if(params_radio.adv_interval_passive != (value1<<8) + value2)
+			if(params_radio.adv_interval_passive != MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.adv_interval_passive = (value1<<8) + value2 ;
+			params_radio.adv_interval_passive =MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS) ;
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -606,9 +605,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_SCAN_INTERVAL:
 		{
-			if(params_radio.scan_interval != (value1<<8) + value2)
+			if(params_radio.scan_interval != MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.scan_interval = (value1<<8) + value2 ;
+			params_radio.scan_interval =MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS) ;
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -616,9 +615,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_SCAN_INTERVAL_PASSIVE:
 		{
-			if(params_radio.scan_interval_passive != (value1<<8) + value2)
+			if(params_radio.scan_interval_passive != MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.scan_interval_passive = (value1<<8) + value2 ;
+			params_radio.scan_interval_passive =MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS) ;
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -626,9 +625,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_SCAN_WINDOW:
 		{
-			if(params_radio.scan_window != (value1<<8) + value2)
+			if(params_radio.scan_window !=MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.scan_window = (value1<<8) + value2 ;
+			params_radio.scan_window = MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS);
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -636,9 +635,9 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		case P_SCAN_WINDOW_PASSIVE:
 		{
-			if(params_radio.scan_window_passive != (value1<<8) + value2)
+			if(params_radio.scan_window_passive !=MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS))
 			{
-			params_radio.scan_window_passive = (value1<<8) + value2 ;
+			params_radio.scan_window_passive = MSEC_TO_UNITS(  (value1<<8) + value2  , UNIT_0_625_MS) ;
 			radio_params_to_save=1;
 			radio_params_hardcoded=0;
 			}
@@ -656,6 +655,18 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		}
 		default:
 		break;
+	}
+	if( radio_params_to_save)
+	{
+		uint32_t err_code;
+		err_code =  sd_ble_gap_adv_stop();
+		APP_ERROR_CHECK(err_code);
+		err_code =  sd_ble_gap_scan_stop();
+		APP_ERROR_CHECK(err_code);
+		set_ble_params(params_radio.mode);
+
+		advertising_start();
+		scan_start();
 	}
 }
 

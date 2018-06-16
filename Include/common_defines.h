@@ -48,13 +48,13 @@
  *
  */
 #define P_NULL				0
-// Param_Base_Mask = 0xE0 -> Lowest Possible Base = 0x20
+// Param_Base_Mask = 0xE0 -> Possible Values: 000 ... 111 << 5
 #define P_BASE_MAIN			0x20
 #define P_BASE_INF			0x40
-#define P_BASE_NETWORK		0x80
-#define P_BASE_RADIO		0x90
+#define P_BASE_NETWORK		0x60
+#define P_BASE_RADIO		0x80
 
-#define P_SHOW_STATUS		P_BASE_MAIN+8
+
 #define P_SET_BEACON_MODE	P_BASE_MAIN+1
 #define P_BOOTLOADER		P_BASE_MAIN+2
 
@@ -77,6 +77,7 @@
 #define P_INF_REV			P_BASE_INF+10
 #define P_INF_RESET_PARAMS	P_BASE_INF+12
 #define P_SET_INF_ACTIVE	P_BASE_INF+13
+#define P_SHOW_STATUS		P_BASE_INF+14
 // Defines for Network Parameters should be in one block
 
 #define P_TIME_NETWORK		P_BASE_NETWORK+1
@@ -139,7 +140,7 @@
 
 #ifdef SIMULATEINFECTION
 #define LENGTH_INFECT_ARRAY	25
-#define WIDTH_INFECT_ARRAY 20  // ToDoIf this is changed, all infect_source lines have to be changed.
+#define WIDTH_INFECT_ARRAY 20  // If this is changed, all infect_source lines have to be changed.
 #endif
 
 #ifndef LED_RGB_RED
