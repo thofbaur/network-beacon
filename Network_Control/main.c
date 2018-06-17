@@ -33,7 +33,7 @@ static ble_gap_adv_params_t m_adv_params;
  *
  */
 // Set Target beacon
-#define TARGET	0x1C // 0xFF for all Beacons, or ID for dedicated beacon
+#define TARGET	0xFF // 0xFF for all Beacons, or ID for dedicated beacon
 
 
 #define TIME_SUSCEPT	64
@@ -61,16 +61,16 @@ static uint8_t raw_advdata[30] = {
 		23, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
 		TARGET,
 //		P_BOOTLOADER		, 1														, 0,
-//		P_SET_BEACON_MODE	, 0														, 0,  // Set first param to 1 or 0
+//		P_SET_BEACON_MODE	, 1														, 0,  // Set first param to 1 or 0
 
 //		P_TIME_INFECT		, ((TIME_INFECT >>8 ) & 0xFF)							, ((TIME_INFECT ) & 0xFF),
 //		P_TIME_RECOVER		, ((TIME_RECOVER >>(8+SHIFT_P_TIME_RECOVER)) & 0xFF)	, ((TIME_RECOVER >> SHIFT_P_TIME_RECOVER) & 0xFF),
 //		P_TIME_SUSCEPT		, ((TIME_SUSCEPT >>(8+SHIFT_P_TIME_SUSCEPT)) & 0xFF)	, ((TIME_SUSCEPT >> SHIFT_P_TIME_SUSCEPT) & 0xFF),
-		P_CHANGE_STATUS		, STATUS_I														, 0, // Set first param die desired status
+//		P_CHANGE_STATUS		, STATUS_H														, 0, // Set first param die desired status
 //		P_SET_INF_ACTIVE	, 1														, 0, // Set first param to 1 or 0
 //		P_INF_RESET_PARAMS	, 0														, 0,
 //		P_INF_REV			, INF_REV												, 0,
-//		P_SHOW_STATUS		, 0														, 0,  // Set first param to 1 or 0
+//		P_SHOW_STATUS		, 1														, 0,  // Set first param to 1 or 0
 //		P_RESET_INFECT		, 1														, 0,
 
 //		P_TIME_FLUSH		, ((TIME_NETZ_FLUSH>>8) & 0xFF) 						, (TIME_NETZ_FLUSH & 0xFF),

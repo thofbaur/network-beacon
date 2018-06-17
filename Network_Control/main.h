@@ -39,7 +39,7 @@
 #define CENTRAL_LINK_COUNT          0                                  /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT       1                                  /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
-#define ADV_INTERVAL				100 // Advertisement interval in milliseconds
+#define ADV_INTERVAL				60 // Advertisement interval in milliseconds
 #define CONNECTABLE_ADV_INTERVAL    MSEC_TO_UNITS(ADV_INTERVAL, UNIT_0_625_MS)
 #define TX_POWER					4
 

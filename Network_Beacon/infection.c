@@ -47,6 +47,7 @@ static uint8_t kontakt_heal = 0;
 	uint16_t limit_time_infect; //10 Minuten
 	uint16_t limit_time_heal;
 	uint16_t limit_time_latency;
+	uint16_t limit_time_temp_imm;
 	uint16_t limit_timeout_contact_infect; // 65 sekunden
 	uint16_t limit_timeout_contact_heal; // 65 sekunden
 	uint16_t	infect_revision;
@@ -120,6 +121,7 @@ void set_inf_params_init(void)
 	params_infect.limit_time_latency = LIMIT_LATENCY;
 	params_infect.limit_time_recovery = LIMIT_RECOVERY;
 	params_infect.limit_time_suscept = LIMIT_SUSCEPT;
+	params_infect.limit_time_temp_imm = LIMIT_TEMP_IMM;
 	params_infect.limit_timeout_contact_infect = INFECT_TIMEOUT;
 	params_infect.limit_timeout_contact_heal = HEAL_TIMEOUT;
 	params_infect.infect_limit_rssi = INFECT_LIMIT_RSSI;
@@ -219,10 +221,6 @@ uint8_t infect_nus_send_data(ble_nus_t * p_nus)
   return infect_sent;
 }
 
-void infect_set_infect(uint8_t mode)
-{
-	params_infect.infect_active = mode;
-}
 
 void infect_evaluate_contact(struct beacon *p_tag,const ble_gap_evt_t   * p_gap_evt)
 {
@@ -316,8 +314,6 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			timer_heal = 0;
 		}
 	}
-
-
 	if(p_tag->status_infect == STATUS_I)
 	{
 		if(timer_state > params_infect.limit_time_recovery  )
@@ -325,6 +321,13 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			status_change(STATUS_R,p_tag,time_counter);
 		}
 		else if(timer_state > params_infect.limit_time_suscept  )
+		{
+			status_change(STATUS_S,p_tag,time_counter);
+		}
+	}
+	if(p_tag->status_infect == STATUS_VT)
+	{
+		if(timer_state > params_infect.limit_time_temp_imm )
 		{
 			status_change(STATUS_S,p_tag,time_counter);
 		}
@@ -501,4 +504,7 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 	}
 }
 
+
+
 #endif
+

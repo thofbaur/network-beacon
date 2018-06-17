@@ -163,28 +163,6 @@ void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
 }
 
 
-void radio_set_beacon_mode(uint8_t mode)
-{
-
-	uint32_t err_code;
-
-	if(mode == params_radio.mode)
-	{
-		//do nothing
-	}
-	else
-	{
-		err_code =  sd_ble_gap_adv_stop();
-		APP_ERROR_CHECK(err_code);
-		err_code =  sd_ble_gap_scan_stop();
-		APP_ERROR_CHECK(err_code);
-		params_radio.mode = mode;
-		set_ble_params(params_radio.mode);
-
-		advertising_start();
-		scan_start();
-	}
-}
 
 
 void gap_params_init(void)
@@ -653,6 +631,16 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 			}
 			break;
 		}
+		case P_SET_RAD_ACTIVE:
+		{
+			if(params_radio.mode != value1)
+			{
+				params_radio.mode = value1;
+				radio_params_to_save=1;
+				break;
+			}
+			break;
+		}
 		default:
 		break;
 	}
@@ -669,5 +657,4 @@ void radio_control(uint8_t switch_param, uint8_t value1, uint8_t value2)
 		scan_start();
 	}
 }
-
 

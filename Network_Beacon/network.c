@@ -279,11 +279,6 @@ void set_contact_active(const ble_gap_evt_t   * p_gap_evt)
 #endif
 }
 
-void network_set_tracking(uint8_t mode)
-{
-	params_network.tracking_active = mode;
-}
-
 void network_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)
 {
 	if( p_gap_evt->params.adv_report.rssi >= params_network.limit_rssi)

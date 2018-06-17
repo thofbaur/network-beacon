@@ -35,10 +35,11 @@
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before heal contact status is reset. Compensate for "lost" pakets.
 #define LIMIT_INFECT 				300 // Time needed with established contact for infection in seconds
-#define LIMIT_RECOVERY				18000 // Time to Recovery in seconds //    6h (SIR-Modell)
 #define LIMIT_LATENCY				5400 //  in seconds 1500  / 2h
 #define LIMIT_HEAL					300 // Time to heal in seconds  300
+#define LIMIT_RECOVERY				18000 // Time to Recovery in seconds //    6h (SIR-Modell)
 #define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds  (SIS-Modell)
+#define LIMIT_TEMP_IMM				1200 // Time for temporary immunity 20 min
 #define INFECT_LIMIT_RSSI		 	-80 // approx. 1-2m distance
 #define INIT_SHOW_STATUS_LED		0  // Determines whether the LED shall represent the current infect status
 #define INF_REV_INIT 				0
@@ -50,7 +51,7 @@
 #define SCAN_WINDOW_MS				120  //scan window in milliseconds
 #define SCAN_INTERVAL_MS			10000  // scan interval in milliseconds
 #define ADV_INTERVAL_PASSIVE				10000 // Advertisement interval in milliseconds
-#define SCAN_WINDOW_MS_PASSIVE				200  //scan window in milliseconds
+#define SCAN_WINDOW_MS_PASSIVE				100  //scan window in milliseconds
 #define SCAN_INTERVAL_MS_PASSIVE			10000  // scan interval in milliseconds
 
 /* Network Parameters
@@ -62,14 +63,14 @@
 #define DATA_LEVEL_2	1
 #define DATA_LEVEL_3	10
 #define DATA_LEVEL_4	100
-#define DATA_LEVEL_5	200
-#define DATA_LEVEL_6	300
-#define DATA_LEVEL_7	500
+#define DATA_LEVEL_5	500
+#define DATA_LEVEL_6	1000
+#define DATA_LEVEL_7	2000
 
 #define NETWORK_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define NETWORK_CONTACTTIME		120
 
-#define LENGTH_CONTACT_LIST 400  //ToDo
+#define LENGTH_CONTACT_LIST 3300  //ToDo
 
 
 #endif

@@ -23,7 +23,7 @@
 APP_TIMER_DEF(m_main_timer_id);
 
 
-static uint8_t led_status = LED_RGB_GREEN;
+static uint32_t led_status_mask = (1<<LED_RGB_GREEN);
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 struct beacon tag ;
 
@@ -44,23 +44,26 @@ void set_status_led(uint8_t * p_show_status_led)
 		switch(tag.status_infect)
 		{
 		case STATUS_I:
-			led_status = LED_RGB_RED;
+			led_status_mask = (1<<LED_RGB_RED);
 			break;
 		case STATUS_V:
-			led_status = LED_RGB_BLUE;
+			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_GREEN);
 			break;
 		case STATUS_R:
-			led_status = LED_RGB_BLUE;
+			led_status_mask = (1<<LED_RGB_BLUE);
+			break;
+		case STATUS_H:
+			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_RED);
 			break;
 		default:
-			led_status = LED_RGB_GREEN;
+			led_status_mask = (1<< LED_RGB_GREEN);
 		}
 #endif
 	}else
 	{
-		led_status = LED_RGB_GREEN;
+		led_status_mask = 1<<LED_RGB_GREEN;
 	}
-	err_code = led_softblink_start((1<<led_status));
+	err_code = led_softblink_start(led_status_mask);
 	APP_ERROR_CHECK(err_code);
 }
 
@@ -182,16 +185,16 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 									{
 										case 1:
 										{
-											radio_set_beacon_mode(1);
-											network_set_tracking(1);
-											infect_set_infect(1);
+											radio_control(P_SET_RAD_ACTIVE,1,0);
+											network_control(P_TRACKING_ACTIVE,1,0);
+											infect_control(P_SET_INF_ACTIVE,1,0,&tag,&time_counter);
 											break;
 										}
 										case 0:
 										{
-											radio_set_beacon_mode(0);
-											network_set_tracking(0);
-											infect_set_infect(0);
+											radio_control(P_SET_RAD_ACTIVE,0,0);
+											network_control(P_TRACKING_ACTIVE,0,0);
+											infect_control(P_SET_INF_ACTIVE,0,0,&tag,&time_counter);
 											break;
 										}
 									break;
@@ -490,8 +493,9 @@ int main(void)
 	APP_ERROR_CHECK(err_code);
 	err_code = sd_power_pof_threshold_set(NRF_POWER_THRESHOLD_V23);
 	APP_ERROR_CHECK(err_code);
-    err_code = led_softblink_start((1<<led_status));
+    err_code = led_softblink_start(led_status_mask);
     APP_ERROR_CHECK(err_code);
+
 
     for (;; )
     {

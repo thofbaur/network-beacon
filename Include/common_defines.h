@@ -39,6 +39,7 @@
 #define STATUS_VT					5
 #define STATUS_H					6
 
+
 //Identifier for all beacon, 3 bytes length
 #define PERIPHERAL_DEVICE_NAME      	"DSA"
 //Identifier for central administration beacon, 3 bytes length
@@ -84,7 +85,7 @@
 #define P_TIMEOUT_NETWORK	P_BASE_NETWORK+2
 #define P_TIME_FLUSH		P_BASE_NETWORK+3
 #define P_RSSI_NETWORK		P_BASE_NETWORK+4
-#define P_TRACKING_ACTIVE 	P_BASE_NETWORK+11
+#define P_TRACKING_ACTIVE 	P_BASE_NETWORK+13
 #define P_NET_RESET_PARAMS 	P_BASE_NETWORK+12
 
 // Defines for Radio Parameters should be in one block
@@ -96,7 +97,7 @@
 #define P_SCAN_WINDOW			P_BASE_RADIO+5
 #define P_SCAN_WINDOW_PASSIVE	P_BASE_RADIO+6
 #define P_RADIO_RESET_PARAMS	P_BASE_RADIO+12
-
+#define P_SET_RAD_ACTIVE		P_BASE_RADIO+13
 
 #define MAX_NUM_TAGS		128
 #define ID_ZENTRALE		128
