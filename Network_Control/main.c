@@ -61,7 +61,7 @@ static uint8_t raw_advdata[30] = {
 		23, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
 		TARGET,
 //		P_BOOTLOADER		, 1														, 0,
-//		P_SET_BEACON_MODE	, 1														, 0,  // Set first param to 1 or 0
+		P_SET_BEACON_MODE	, 0														, 0,  // Set first param to 1 or 0
 
 //		P_TIME_INFECT		, ((TIME_INFECT >>8 ) & 0xFF)							, ((TIME_INFECT ) & 0xFF),
 //		P_TIME_RECOVER		, ((TIME_RECOVER >>(8+SHIFT_P_TIME_RECOVER)) & 0xFF)	, ((TIME_RECOVER >> SHIFT_P_TIME_RECOVER) & 0xFF),

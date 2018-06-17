@@ -38,14 +38,14 @@
 
 #include "common_defines.h"
 
-#define READOUT_LEVEL			0
-//#define DATA_LEVEL_1	0
-//#define DATA_LEVEL_2	1
-//#define DATA_LEVEL_3	10
-//#define DATA_LEVEL_4	500
-//#define DATA_LEVEL_5	1000
-//#define DATA_LEVEL_6	2000
-//#define DATA_LEVEL_7	3000
+#define READOUT_LEVEL			2
+#define DATA_LEVEL_1	0
+#define DATA_LEVEL_2	1
+#define DATA_LEVEL_3	10
+#define DATA_LEVEL_4	100
+#define DATA_LEVEL_5	500
+#define DATA_LEVEL_6	1000
+#define DATA_LEVEL_7	2000
 
 
 
