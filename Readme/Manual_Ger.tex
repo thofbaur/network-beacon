@@ -201,11 +201,25 @@ Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils übe
     
 
 \end{tikzpicture}
-\caption{Infektionszustände der der Seuchenfunktionalität}
+\caption{Übergänge der Infektionszustände der Seuchenfunktionalität}
    \label{fig:statemachine}
 \end{figure}
 
-Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen (siehe Abb.\,\ref{fig:statemachine}) und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
+\begin{table}[h]
+  \centering
+  \begin{tabular}{ccp{7cm}c}
+    Kürzel & Name & Beschreibung & LED-Farbe \\\hline
+    S & suszeptibel & gesunder Träger & grün \\
+    L & latent & infizierter Träger, noch ohne Symptome und nicht infektiös & grün \\
+    I & infiziert & infizierter Träger, der andere infizieren kann & rot \\
+    R & recover & gesunder Träger, der überlebt hat und nun immun ist (alternativ tot) & blau \\
+    V & ? & ? & ? \\
+  \end{tabular}
+  \caption{Beschreibung der Infektionszustände der Seuchenfunktionalität}
+  \label{tab:infectioninfo}
+\end{table}
+
+Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen (siehe Abbildung~\ref{fig:statemachine}, die einzelnen Zustände sind in Tabelle~\ref{tab:infectioninfo} beschrieben) und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
 
 Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
 \begin{itemize}
