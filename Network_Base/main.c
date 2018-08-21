@@ -645,9 +645,11 @@ void bsp_event_handler(bsp_event_t event)
                     APP_ERROR_CHECK(err_code);
             break;
         case BSP_EVENT_KEY_0:
+        	printf("Logging started\r\n");
         	central_ready = 1;
         	break;
         case BSP_EVENT_KEY_1:
+        	printf("Logging stopped\r\n");
         	central_ready = 0;
         	break;
         default:
