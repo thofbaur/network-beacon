@@ -219,7 +219,7 @@ Die veränderbaren Parameter sind in Network\_beacon/main.h defaultmäßig wie f
 \item \#define LIMIT\_RSSI		 			-80 // entspricht ca. 1-2m Abstand
 \end{itemize}
 
-Das Auslesen der Daten erfolgt über die Firmware im Ordner netzwerk\_zentrale. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
+Das Auslesen der Daten erfolgt über die Firmware im Ordner network\_control. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
 \begin{itemize}
 \item Aktueller interner Timer
 \item Vollständiger Seuchen Ringspeicher
