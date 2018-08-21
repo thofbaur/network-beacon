@@ -227,7 +227,16 @@ Das Auslesen der Daten erfolgt über die Firmware im Ordner Network\_Control. Di
 \item Netzwerk Ringspeicher ab dem letzten Auslesen
 \end{itemize}
 
-Die Daten werden anschließend über die UART Schnittstelle bereitgestellt und können dort ausgelesen werden. Bewährt hat sich hierbei ExtraPutty, da dies mit Zeitstempel loggen kann. Die Verbindung erfolgt über COM.
+Die Daten werden anschließend über die UART Schnittstelle bereitgestellt und können dort ausgelesen werden. Bewährt hat sich unter Windows hierbei ExtraPutty, da dies mit Zeitstempel loggen kann. Die Verbindung erfolgt über COM. Unter Linux kann das folgende Shell-Skript verwendet werden. Dieses muss mit root-Rechten ausgeführt werden um von \verb|/dev/ttyACM0| lesen zu dürfen.
+
+\begin{verbatim}
+#!/bin/bash
+stty -F /dev/ttyACM0  115200
+stdbuf -i0 -o0 -e0 \
+  awk '{print strftime("%Y-%m-%d %H:%M:%S",systime()) " " $0}' /dev/ttyACM0 \
+  | tee -a /beacon.log
+\end{verbatim}
+
 Das Suchen nach Beacon startet auf dem DK erst nach Druck auf Button 1 aktiviert, Button 2 deaktiviert das Auslesen wieder. Dies soll verhindern, dass Daten ins Nirvana geschickt werden, falls noch kein PC logbereit ist.
 Aktuell scheint das Auslesen nur 2h lang aktiv zu sein, danach beendet ''etwas'' das Auslesen, Vermutlich wird die Verbindung vom PC deaktiviert. Dies sollte noch untersucht werden.
 
