@@ -201,7 +201,7 @@ LDFLAGS += -Wl,--gc-sections
 LDFLAGS += --specs=nano.specs -lc -lnosys
 
 
-.PHONY: $(TARGETS) default all clean help flash flash_softdevice
+.PHONY: $(TARGETS) default all clean help flash_DK flash_softdevice
 
 # Default target - first one defined
 default: nrf51422_xxac
@@ -220,7 +220,7 @@ include $(TEMPLATE_PATH)/Makefile.common
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
-flash: $(OUTPUT_DIRECTORY)/nrf51422_xxac.hex
+flash_DK: $(OUTPUT_DIRECTORY)/nrf51422_xxac.hex
 	@echo Flashing: $<
 	nrfjprog --program $< -f nrf51 --sectorerase
 	nrfjprog --reset -f nrf51
