@@ -168,9 +168,9 @@ Im Sendemodus  meldet sich jedes Beacon mit dem Namen ''DSA'' und sendet als Adv
 Im Empfangsmodus wird nach Advertisements gescannt die von Geräten mit Namen DSA kommen. Ein solches Paket wird dann in verschiedenen Stufen ausgewertet.
 \begin{itemize}
 \item Ist das Paket von der Zentrale (Network\_control) werden die übermittelten Parameter eingestellt. Die Parameter werden aktuell nur im RAM gespeichert und werden nach einem Reset etwa durch Batteriewechsel oder Wackelkontakt wieder auf die Default werte gesetzt. 
-\item Ist die Signalstärke über dem (parametrierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
+\item Ist die Signalstärke über dem (parametrisierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
 \end{itemize}
-Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
+Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrisierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
 
 \begin{figure}[h]
 \centering
