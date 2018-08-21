@@ -157,6 +157,9 @@ das DK komplett löschen. Die Update Firmware wird automatisch aufgespielt.
 \section{Wirkprinzip}
 Mit BLE lassen sich verschiedene Betriebsmodi realisieren. Im Peripheral-Betrieb werden regelmäßig ''Advertisments'' ausgesendet, die Beaconspezifisch angepasst werden können. Nutzlast hierbei sind maximal 29 Byte. Im Central-Betrieb wird kontinuierlich oder regelmäßig nach anderen BLE Sendern im Peripheral-Betrieb in der Nähe gesucht. Dabei wird das komplette Advertisments empfangen und kann verarbeitet werden. Hier können auch weitere Daten angefordert werden (Scan Request) die vom Peripheral in einer Scan-Response gesendet werden. Hierbei können weitere 29 Byte übermittelt werden. Ein Central kann auch eine Verbindung zu einem Peripheral herstellen  (connect) um die kompletten Daten auslesen zu können.
 
+
+\subsection{Der einzelne Beacon}
+
 In der aktuellen Version wechselt die Network\_Beacon ständig zwischen Sende und Empfangsmodus. Sie kann auf Beacons und DK aufgespielt werden.
 
 Im Sendemodus  meldet sich jedes Beacon mit dem Namen ''DSA'' und sendet als Advertisment 3 Bytes Nutzlast. 
@@ -172,6 +175,8 @@ Im Empfangsmodus wird nach Advertisements gescannt die von Geräten mit Namen DS
 \item Ist die Signalstärke über dem (parametrisierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
 \end{itemize}
 Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrisierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
+
+\subsection{Das Seuchenmodell}
 
 \begin{figure}[h]
 \centering
@@ -200,7 +205,7 @@ Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils übe
    \label{fig:statemachine}
 \end{figure}
 
-Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
+Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen (siehe Abb.\,\ref{fig:statemachine}) und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
 
 Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
 \begin{itemize}
@@ -219,6 +224,8 @@ Die veränderbaren Parameter sind in Network\_Beacon/main.h defaultmäßig wie f
 \item \#define LIMIT\_RESET					3600 // immunity after reset in seconds 1800
 \item \#define LIMIT\_RSSI		 			-80 // entspricht ca. 1-2m Abstand
 \end{itemize}
+
+\subsection{Auslesen der Daten}
 
 Das Auslesen der Daten erfolgt über die Firmware im Ordner Network\_Control. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
 \begin{itemize}
@@ -239,6 +246,8 @@ stdbuf -i0 -o0 -e0 \
 
 Das Suchen nach Beacon startet auf dem DK erst nach Druck auf Button 1 aktiviert, Button 2 deaktiviert das Auslesen wieder. Dies soll verhindern, dass Daten ins Nirvana geschickt werden, falls noch kein PC logbereit ist.
 Aktuell scheint das Auslesen nur 2h lang aktiv zu sein, danach beendet ''etwas'' das Auslesen, Vermutlich wird die Verbindung vom PC deaktiviert. Dies sollte noch untersucht werden.
+
+\subsection{Auswertung mit MATLAB}
 
 Das geloggte Skript kann mit dem Matlab Skript Log\_Auswertung verarbeitet werden. Das Skript erzeugt eine CSV-Datei in der die sozialen Kontakte im Format (Node\_start,Node\_end,Time\_start,Time\_end)  aufgezeichnet werden
 Zusätzlich wird ein .mat Datei erzeugt in der zum einen aus den Kontakten der entsprechende zeitabhänge Graph erstellt wird und zum anderen für jeden Knoten relevante Daten notiert werden. Diese Daten umfassen zum einen die Infektionsdaten, zum anderen Daten wie aktueller Timer, letztes Auslesen, Anzahl der Reset. 
