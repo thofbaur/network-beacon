@@ -74,6 +74,7 @@ Jeder Akademieteilnehmer und teilweise auch das Personal vor Ort bekommt mit dem
 
 Für die Akademie Torgelow 2017 wurde die Anwendung zusätzlich um die Aufzeichnung des sozialen Netzwerkes ergänzt.
 
+Auf der Akademie Grovesmühle 2018 wurden die Beacons im Rahmen eines Kurses zur Graphentheorie zur Aufzeichnung des sozialen Netzes benutzt.
 
 \subsection{Software-Architektur}
 Das Gesamtsystem ist aus fünf Teilen aufgebaut:
@@ -87,7 +88,7 @@ Das Gesamtsystem ist aus fünf Teilen aufgebaut:
 
 \subsection{Hardware}
 \begin{itemize}
-\item (117-x) nRF51822 Bluetooth Smart Beacon Kit Rev 1.3 (32kB RAM) (Nordic Boardbezeichnung PCA10028), davon zwei neuangeschafft und noch mit der Default Firmware; Aktuell ist auf den Rev1.3 Chips (bis auf die 2 neuen) eine Software geflasht, die Seuchensimulation und Erfassung der sozialen Kontakte ermöglich. Darunter ist ein Bootloader geflasht für Update ohne Kabel. (Details unten)
+\item $(117-x)$ nRF51822 Bluetooth Smart Beacon Kit Rev 1.3 (32kB RAM) (Nordic Boardbezeichnung PCA10028), davon zwei neuangeschafft und noch mit der Default Firmware; Aktuell ist auf den Rev1.3 Chips (bis auf die 2 neuen) eine Software geflasht, die Seuchensimulation und Erfassung der sozialen Kontakte ermöglich. Darunter ist ein Bootloader geflasht für Update ohne Kabel. (Details unten; aktuelle Schätzung 2018 ist $x=3$)
 \item 1 nRF51822 Bluetooth Smart Beacon Kit Rev 1.2 (16kB RAM)
 \item 4 nRF51 DK (32kB RAM) (Nordic Boardbezeichnung PCA20006)
 \item TC2030-CTX-NL  DebugKabel mit Clip zur Fixierung
@@ -102,8 +103,9 @@ Der geringe Stromverbrauch von BLE basiert zu einem großen Teil in der sparsame
 \subsection{Programmierung}
 Die Dokumentation durch NordicSemiconductor ist hervoragend, ebenso der Support sowohl im Forum, als auch in bei expliziter Erstellung eines ''Support Cases''. 
 
-Für die Programmierung sieht Nordic mehrere Optionen vor. Der offizielle Weg verwendet die kostenpflichtige Entwicklungsumgebung (IDE) Keil. Die inoffiziell unterstützte Variante ist mit Makefiles über die OpenSource IDE Ecplise. Ein sehr gutes Tutorial ist unter \url{https://devzone.nordicsemi.com/tutorials/7/} (Stand 15.8.2016) zu finden. Das beschriebene Vorgehen hat bei mir auch bei späteren Versionen von Eclipse einwandfrei funktioniert. Lediglich für die Debug Einstellungen musste der Befehl des Debuggers explizit angegeben werden. 
-NordicSemiconductor stellt einen fertigen Bluetooth Stack zur Verfügung der die komplette Ansteuerung des BLE Senders übernimmt. Hierzu muss das Softdevice auf den Chip geflasht werden. Im Betrieb verbraucht der Softdevice ca. 8 MB RAM.
+Für die Programmierung sieht Nordic mehrere Optionen vor. Der offizielle Weg verwendet die kostenpflichtige Entwicklungsumgebung (IDE) Keil. Die inoffiziell unterstützte Variante ist mit Makefiles über die OpenSource IDE Ecplise. Ein sehr gutes Tutorial ist unter \url{https://devzone.nordicsemi.com/tutorials/7/} (Stand 15.8.2016) zu finden. Das beschriebene Vorgehen hat bei mir auch bei späteren Versionen von Eclipse einwandfrei funktioniert. Lediglich für die Debug Einstellungen musste der Befehl des Debuggers explizit angegeben werden. Für den reinen Betrieb der Beacons ist keine Entwicklungsumgebung nötig, es reicht eine Toolchain (Compiler + make + Nordic-Kram); Details dazu in Abschnitt~\ref{sec:minimal-setup}.
+
+NordicSemiconductor stellt einen fertigen Bluetooth Stack zur Verfügung der die komplette Ansteuerung des BLE Senders übernimmt. Hierzu muss das Softdevice auf den Chip geflasht werden. Im Betrieb verbraucht der Softdevice ca. 8 kB RAM.
 NordicSemiconductor stellt den Softdevice und Code Beispiele in einem SDK zur Verfügung. Für die aktuelle Software wurde SDK 12.3 (\url{https://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF5-SDK\#Downloads}) verwendet. Beim Wechsel der Versionen werden die Schnittstellen und Funktionen von NordicSemi teilweise verändert, so dass ein Upgrade nur erfolgen sollte falls unbedingt nötig.
 
 Die Code Beispiele in den Software Delevopment Kits (SDK) bieten einen guten Startpunkt. 
@@ -153,24 +155,41 @@ Falls das Update wegen Error 13 fehlschlägt, kann es sein, dass das DK nicht ri
 nrfjprog --eraseall
 \end{verbatim}
 das DK komplett löschen. Die Update Firmware wird automatisch aufgespielt.
+
+\subsubsection{Minimales Entwicklungsumgebung}
+\label{sec:minimal-setup}
+
+Der Verzicht auf eine echte Entwicklungsumgebung bietet sich insbesondere unter Linux an, wo die Toolchain per Shell zugänglich ist. Dazu befolgen wir wie oben beschrieben die Anleitung von Nordicsemi, hören aber direkt vor der Installation von Eclipse auf. Außerdem führen viele Linux-Distributionen die jlink-Software von Segger in ihren Repositories, sodass diese bequem per Paketmanager installiert werden kann.
+
+Zum Anpassen der Funktionalität können nun der Quellcode in einem beliebigen Editor angepasste werden (wesentliche Datei wird hier Network\_Control/main.c sein). Danach wird das entsprechende Gerät per USB-Kabel an den Rechner angeschlossen und der Befehl \verb|make| im entsprechenden Verzeichnis (bspw. Network\_Control/Makefile\_Linker) mit dem gewünschten Ziel (diese heißen \verb|flash_*| mit jeweils passender Endung) aufgerufen.
+
 \section{Wirkprinzip}
 Mit BLE lassen sich verschiedene Betriebsmodi realisieren. Im Peripheral-Betrieb werden regelmäßig ''Advertisments'' ausgesendet, die Beaconspezifisch angepasst werden können. Nutzlast hierbei sind maximal 29 Byte. Im Central-Betrieb wird kontinuierlich oder regelmäßig nach anderen BLE Sendern im Peripheral-Betrieb in der Nähe gesucht. Dabei wird das komplette Advertisments empfangen und kann verarbeitet werden. Hier können auch weitere Daten angefordert werden (Scan Request) die vom Peripheral in einer Scan-Response gesendet werden. Hierbei können weitere 29 Byte übermittelt werden. Ein Central kann auch eine Verbindung zu einem Peripheral herstellen  (connect) um die kompletten Daten auslesen zu können.
+
+
+\subsection{Der einzelne Beacon}
 
 In der aktuellen Version wechselt die Network\_Beacon ständig zwischen Sende und Empfangsmodus. Sie kann auf Beacons und DK aufgespielt werden.
 
 Im Sendemodus  meldet sich jedes Beacon mit dem Namen ''DSA'' und sendet als Advertisment 3 Bytes Nutzlast. 
-\begin{itemize}
+\begin{enumerate}
 \item Seine ID (Nr von 1 bis 120, eigentlich bis 128 möglich, aber aktuell können beim Auslesen maximal 15 Bytes = 120 Bit übertragen werden)
 \item Infektionsstatus: Aktueller Zustand im SIRV Model und die Version der aktuell aufgespielten Seuchenparameter
+
+  Genauer: \verb!status_infect | (inf_rev << 5)! mit \verb!status_infect!$\in [0,6]$ sowie \verb!inf_rev!$\in [0,7]$
 \item Batteriestatus und Menge an aufgezeichneten sozialen Kontakten.
-\end{itemize}
+
+  Genauer: \verb!(status_batt << 4) | (status_data << 5)! mit \verb!status_batt!$\in [0,1]$ sowie \verb!status_data!$\in [0,7]$
+\end{enumerate}
 
 Im Empfangsmodus wird nach Advertisements gescannt die von Geräten mit Namen DSA kommen. Ein solches Paket wird dann in verschiedenen Stufen ausgewertet.
 \begin{itemize}
-\item Ist das Paket von der Zentrale (Network\_control) werden die übermittelten Parameter eingestellt. Die Parameter werden aktuell nur im RAM gespeichert und werden nach einem Reset etwa durch Batteriewechsel oder Wackelkontakt wieder auf die Default werte gesetzt. 
-\item Ist die Signalstärke über dem (parametrierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
+\item Ist das Paket von der Zentrale (Network\_Control) werden die übermittelten Parameter eingestellt. Die Parameter werden aktuell nur im RAM gespeichert und werden nach einem Reset etwa durch Batteriewechsel oder Wackelkontakt wieder auf die Default werte gesetzt. 
+\item Ist die Signalstärke über dem (parametrisierbar) eingestellten Limit wird zum einen der soziale Kontakttrigger für diese ID gesetzt und zum anderen überprüft ob das Beacon aufgrund seines Seuchenzustandes eine Auswirkung hätte. In diesem Fall wird ebenfalls ein Trigger gesetzt.
 \end{itemize}
-Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
+Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils überprüft, ob ein Kontakt (sozial oder Seuche) lange genug bestand um registriert zu werden. Die Limits hierfür sind separat parametrisierbar. Für einen sozialen Kontakt wird bei Gültigkeit ein entsprechender Eintrag in einem Ringspeicher gemacht, der die ID des Kontakts enthält, Start und Endzeit des Kontakts in sekundengenauer Auflösung in einem internen Timer. Die Beacons haben keine absolute Zeit, sondern nur einen internen Sekunden Timer der ab reset läuft) Kontakte sollten idealerweise auf beiden Seiten aufgezeichnet werden.
+
+\subsection{Das Seuchenmodell}
 
 \begin{figure}[h]
 \centering
@@ -195,11 +214,27 @@ Die Trigger werden in der zyklischen Routine ausgewertet. Hier wird jeweils übe
     
 
 \end{tikzpicture}
-\caption{Infektionszustände der der Seuchenfunktionalität}
+\caption{Übergänge der Infektionszustände der Seuchenfunktionalität}
    \label{fig:statemachine}
 \end{figure}
 
-Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
+\begin{table}[h]
+  \centering
+  \begin{tabular}{cccp{7cm}c}
+    Kürzel & Name & ID & Beschreibung & LED-Farbe \\\hline
+    S & suszeptibel & 0 & gesunder Träger & grün \\
+    L & latent & 1 & infizierter Träger, noch ohne Symptome und nicht infektiös & grün \\
+    I & infiziert & 2 & infizierter Träger, der andere infizieren kann & rot \\
+    R & recover & 3 & gesunder Träger, der überlebt hat und nun immun ist (alternativ tot) & blau \\
+    V & ? & 4 & ? & ? \\
+    VT & ? & 5 & ? & ? \\
+    H & ? & 6 & ? & ? \\
+  \end{tabular}
+  \caption{Beschreibung der Infektionszustände der Seuchenfunktionalität}
+  \label{tab:infectioninfo}
+\end{table}
+
+Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen (siehe Abbildung~\ref{fig:statemachine}, die einzelnen Zustände sind in Tabelle~\ref{tab:infectioninfo} beschrieben) und die Daten ebenfalls in einem weiteren Ringspeicher vermerkt. Hierbei wird die aktuelle Zeit, der neue Zustand und die Verursacher gespeichert. Verursacher sind alle IDs in der relevanten Zeit Kontakt mit dem Beacon hatten und somit zur Infektion beitragen konnten. Bei internen Übergängen wie von Latenz zu Infektiös wird 0 vermerkt.
 
 Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
 \begin{itemize}
@@ -209,7 +244,7 @@ Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
 \end{itemize}
 
 
-Die veränderbaren Parameter sind in Network\_beacon/main.h defaultmäßig wie folgt eingestellt:
+Die veränderbaren Parameter sind in Network\_Beacon/main.h defaultmäßig wie folgt eingestellt:
 \begin{itemize}
 \item \#define LIMIT\_RECOVERY				21600 // Time to Recovery in seconds     6h (SIR-Modell)
 \item \#define LIMIT\_LATENCY				5400 //  in seconds 1500  / Suggestion 30 min
@@ -219,16 +254,63 @@ Die veränderbaren Parameter sind in Network\_beacon/main.h defaultmäßig wie f
 \item \#define LIMIT\_RSSI		 			-80 // entspricht ca. 1-2m Abstand
 \end{itemize}
 
-Das Auslesen der Daten erfolgt über die Firmware im Ordner netzwerk\_zentrale. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
+\subsection{Auslesen der Daten}
+
+Das Auslesen der Daten erfolgt über die Firmware im Ordner Network\_Base. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
 \begin{itemize}
 \item Aktueller interner Timer
 \item Vollständiger Seuchen Ringspeicher
 \item Netzwerk Ringspeicher ab dem letzten Auslesen
 \end{itemize}
 
-Die Daten werden anschließend über die UART Schnittstelle bereitgestellt und können dort ausgelesen werden. Bewährt hat sich hierbei ExtraPutty, da dies mit Zeitstempel loggen kann. Die Verbindung erfolgt über COM.
+Die Daten werden anschließend über die UART Schnittstelle bereitgestellt und können dort ausgelesen werden. Bewährt hat sich unter Windows hierbei ExtraPutty, da dies mit Zeitstempel loggen kann. Die Verbindung erfolgt über COM. Unter Linux kann das folgende Shell-Skript verwendet werden. Dieses muss mit root-Rechten ausgeführt werden um von \verb|/dev/ttyACM0| lesen zu dürfen.
+
+\begin{verbatim}
+#!/bin/bash
+stty -F /dev/ttyACM0  115200
+stdbuf -i0 -o0 -e0 \
+  awk '{print strftime("%Y-%m-%d %H:%M:%S",systime()) " " $0}' /dev/ttyACM0 \
+  | tee -a /beacon.log
+\end{verbatim}
+
 Das Suchen nach Beacon startet auf dem DK erst nach Druck auf Button 1 aktiviert, Button 2 deaktiviert das Auslesen wieder. Dies soll verhindern, dass Daten ins Nirvana geschickt werden, falls noch kein PC logbereit ist.
 Aktuell scheint das Auslesen nur 2h lang aktiv zu sein, danach beendet ''etwas'' das Auslesen, Vermutlich wird die Verbindung vom PC deaktiviert. Dies sollte noch untersucht werden.
+
+\subsection{Datenformat der ausgelesenen Daten}
+
+In der Logdatei finden sich im Wesentlichen Zeilen von drei verschiedenen Sorten.
+\begin{itemize}
+\item Generelle Informationen zu dem Beacon. Diese Zeile wird direkt am
+  Anfang des Auslesens einmal übertragen. Das Format ist
+  \verb!General: ID, STATUS, TIME!.
+
+  Dabei ist \verb!ID! die ID des Beacons. Weiter ist \verb!STATUS! die
+  folgende Kombination: \verb!status_infect | (status_batt << 4) | (inf_rev << 5)!,
+  wobei \verb!status_infect! der Zustand im Seuchenmodell ist (mit Werten in
+  $[0,6]$), \verb!status_batt! angibt ob die Batteriespannung fällt (1 falls
+  die Spannung niedrig ist und 0 sonst) und \verb!inf_rev! die
+  Revisionsnummer des Seuchenmodells, mit dem der Beacon zuletzt
+  programmiert wurde (mit Werten in $[0,7]$). Schließlich ist \verb!TIME!
+  der Zeitzähler, der die Sekunden seit Einschalten des Beacons angibt.
+\item Angaben zu Zustandsübergängen im Seuchenmodell. Das Format der Zeile ist
+  \verb!Infect: ID, STATUS, TIME, SOURCE!.
+
+  Dabei ist \verb!ID! die eigene ID und \verb!STATUS! der neu angenommene
+  Status. In \verb!TIME! steht der Zeitstempel (in Beacon-lokalen Sekunden
+  seit Einschalten) des Zustandswechsels. Schließlich ist \verb!SOURCE! eine
+  Bitmaske der zum Zeitpunkt der Zustandsänderung in Reichweite befindlichen
+  Beacons; diese gibt in 15 Gruppen zu je 8 Bit mit einer 1 die Anwesenheit
+  an (andernfalls 0).
+\item Aufzeichnung des sozialen Netzes. Das Format ist
+  \verb!Netz: ID1, ID2, START, DURATION!.
+
+  Dabei ist \verb!ID1! die eigene ID und \verb!ID2! die ID des gesehenen
+  Beacons. Weiter ist \verb!START! der Zeitpunkt des Starts der Interaktion
+  (in Beacon-lokalen Sekunden seit Einschalten) und \verb!DURATION! die
+  Dauer des Kontakts in Sekunden.
+\end{itemize}
+
+\subsection{Auswertung mit MATLAB}
 
 Das geloggte Skript kann mit dem Matlab Skript Log\_Auswertung verarbeitet werden. Das Skript erzeugt eine CSV-Datei in der die sozialen Kontakte im Format (Node\_start,Node\_end,Time\_start,Time\_end)  aufgezeichnet werden
 Zusätzlich wird ein .mat Datei erzeugt in der zum einen aus den Kontakten der entsprechende zeitabhänge Graph erstellt wird und zum anderen für jeden Knoten relevante Daten notiert werden. Diese Daten umfassen zum einen die Infektionsdaten, zum anderen Daten wie aktueller Timer, letztes Auslesen, Anzahl der Reset. 
