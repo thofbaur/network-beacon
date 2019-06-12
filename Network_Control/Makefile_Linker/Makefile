@@ -56,7 +56,7 @@ $(SDK_PATH)/components/drivers_nrf/common/nrf_drv_common.c	\
 #$(SDK_PATH)/components/ble/ble_advertising/ble_advertising.c \
 
 #assembly files common to all targets
-ASM_SOURCE_FILES  = $(SDK_PATH)/components/toolchain/gcc/gcc_startup_nrf51.s
+ASM_SOURCE_FILES  = $(SDK_PATH)/components/toolchain/gcc/gcc_startup_nrf51.S
 #$(SDK_PATH)
 #includes common to all targets
 #INC_PATHS += -I$(abspath ../../../../../components/device)
@@ -71,7 +71,7 @@ INC_PATHS += -I$(SDK_PATH)/components/drivers_nrf/delay
 INC_PATHS += -I$(SDK_PATH)/components/libraries/timer
 INC_PATHS += -I$(SDK_PATH)/components/libraries/util
 INC_PATHS += -I$(SDK_PATH)/components/libraries/button
-INC_PATHS += -I$(SDK_PATH)/components/toolchain/CMSIS/Include
+INC_PATHS += -I$(SDK_PATH)/components/toolchain/cmsis/Include
 INC_PATHS += -I$(SDK_PATH)/components/toolchain
 INC_PATHS += -I$(SDK_PATH)/components/softdevice/s130/headers
 INC_PATHS += -I$(SDK_PATH)/components/softdevice/common/softdevice_handler
@@ -164,10 +164,10 @@ C_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(C_SOURCE_FILE_NAMES:.c=.o) )
 
 ASM_SOURCE_FILE_NAMES = $(notdir $(ASM_SOURCE_FILES))
 ASM_PATHS = $(call remduplicates, $(dir $(ASM_SOURCE_FILES) ))
-ASM_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(ASM_SOURCE_FILE_NAMES:.s=.o) )
+ASM_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(ASM_SOURCE_FILE_NAMES:.S=.o) )
 
 vpath %.c $(C_PATHS)
-vpath %.s $(ASM_PATHS)
+vpath %.S $(ASM_PATHS)
 
 OBJECTS = $(C_OBJECTS) $(ASM_OBJECTS)
 LINKER_SCRIPT= ble_app_seuchen_gcc_nrf51.ld
@@ -195,7 +195,7 @@ $(OBJECT_DIRECTORY)/%.o: %.c
 	$(NO_ECHO)$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
 
 # Assemble files
-$(OBJECT_DIRECTORY)/%.o: %.s
+$(OBJECT_DIRECTORY)/%.o: %.S
 	@echo Assembly file: $(notdir $<)
 	$(NO_ECHO)$(CC) $(ASMFLAGS) $(INC_PATHS) -c -o $@ $<
 # Link
