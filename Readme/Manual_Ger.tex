@@ -101,7 +101,7 @@ Die Beacons müssen über CR1632 Knopfzellen mit Strom versorgt werden. Das Debu
 \subsection{Stromverbrauch}
 Der geringe Stromverbrauch von BLE basiert zu einem großen Teil in der sparsamen Aktivierung der BL Signals. Im Empfangmodus (Rx) verbraucht der Chip ca. 13 mA. Im Sendemodus je nach Leistungsstärke und Paketgröße ~5mA. Ein Adv. Paket benötigt ca. 15ms Sendezeit. Da die Batterien nur ~130mAh Kapazität haben muss sehr genau überlegt werden, welche Sende- und Empfangszyklen benötigt werden. Mehr dazu im Beispiel der SeuchenApp weiter unten.
 \subsection{Programmierung}
-Die Dokumentation durch NordicSemiconductor ist hervoragend, ebenso der Support sowohl im Forum, als auch in bei expliziter Erstellung eines ''Support Cases''. 
+Die Dokumentation durch NordicSemiconductor ist hervorragend, ebenso der Support sowohl im Forum, als auch in bei expliziter Erstellung eines ''Support Cases''. 
 
 Für die Programmierung sieht Nordic mehrere Optionen vor. Der offizielle Weg verwendet die kostenpflichtige Entwicklungsumgebung (IDE) Keil. Die inoffiziell unterstützte Variante ist mit Makefiles über die OpenSource IDE Ecplise. Ein sehr gutes Tutorial ist unter \url{https://devzone.nordicsemi.com/tutorials/7/} (Stand 15.8.2016) zu finden. Das beschriebene Vorgehen hat bei mir auch bei späteren Versionen von Eclipse einwandfrei funktioniert. Lediglich für die Debug Einstellungen musste der Befehl des Debuggers explizit angegeben werden. Für den reinen Betrieb der Beacons ist keine Entwicklungsumgebung nötig, es reicht eine Toolchain (Compiler + make + Nordic-Kram); Details dazu in Abschnitt~\ref{sec:minimal-setup}.
 
