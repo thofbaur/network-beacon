@@ -49,6 +49,9 @@ void set_status_led(uint8_t * p_show_status_led)
 		case STATUS_V:
 			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_GREEN);
 			break;
+		case STATUS_VT:
+			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_GREEN);
+			break;
 		case STATUS_R:
 			led_status_mask = (1<<LED_RGB_BLUE);
 			break;

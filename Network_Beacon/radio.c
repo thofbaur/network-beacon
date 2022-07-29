@@ -273,7 +273,8 @@ static uint8_t nus_push_data(ble_nus_t * p_nus)
    {
 	   infect_sent = infect_nus_send_data( p_nus);
    }
-
+#else
+   infect_sent = 1;
 #endif
    //send network data
    if(infect_sent)

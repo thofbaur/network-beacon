@@ -240,7 +240,7 @@ $(BUILD_DIRECTORIES):
 # Create objects from C SRC files
 $(OBJECT_DIRECTORY)/%.o: %.c
 	@echo Compiling file: $(notdir $<)
-	$(NO_ECHO)$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
 
 # Assemble files
 $(OBJECT_DIRECTORY)/%.o: %.s
@@ -294,6 +294,11 @@ flash_sd_beacon: nrf51822_xxac_s130
 	nrfjprog -p -f nrf51
 	
 flash_DK: nrf51422_xxac_s130
+	@echo Erasing all
+	nrfjprog --eraseall
+	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
+	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --chiperase
+	nrfjprog -p -f nrf51
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
 	nrfjprog --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf51  --sectorerase
 	nrfjprog -p -f nrf51

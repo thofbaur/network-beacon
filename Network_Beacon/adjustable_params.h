@@ -34,12 +34,12 @@
 
 #define INFECT_TIMEOUT			65 // Timeout for received adv. packet in seconds. 0..255 before infect contact status is reset. Compensate for "lost" pakets.
 #define HEAL_TIMEOUT			120 // Timeout for received adv. packet in seconds. 0..255 before heal contact status is reset. Compensate for "lost" pakets.
-#define LIMIT_INFECT 				300 // Time needed with established contact for infection in seconds
-#define LIMIT_LATENCY				5400 //  in seconds 1500  / 2h
-#define LIMIT_HEAL					300 // Time to heal in seconds  300
-#define LIMIT_RECOVERY				18000 // Time to Recovery in seconds //    6h (SIR-Modell)
-#define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds  (SIS-Modell)
-#define LIMIT_TEMP_IMM				1200 // Time for temporary immunity 20 min
+#define LIMIT_INFECT 				300 // Time needed with established contact for infection in seconds S-> E
+#define LIMIT_EXPOSED_ALT			600 //  in seconds 1500  / 2h E-> I
+#define LIMIT_HEAL					60 // Time to heal in seconds  300
+#define LIMIT_RECOVERY				18000 // Time to Recovery in seconds //    6h (SIR-Modell) I-> R
+#define LIMIT_SUSCEPT				1400000 // Time to suscept in seconds  (SIS-Modell) I->S
+#define LIMIT_TEMP_IMM				1200 // Time for temporary immunity 20 min VT->S
 #define INFECT_LIMIT_RSSI		 	-80 // approx. 1-2m distance
 #define INIT_SHOW_STATUS_LED		0  // Determines whether the LED shall represent the current infect status
 #define INF_REV_INIT 				0

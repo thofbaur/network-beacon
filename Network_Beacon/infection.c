@@ -46,7 +46,7 @@ static uint8_t kontakt_heal = 0;
 	uint32_t limit_time_suscept;
 	uint16_t limit_time_infect; //10 Minuten
 	uint16_t limit_time_heal;
-	uint16_t limit_time_latency;
+	uint16_t limit_time_exposed_alt;
 	uint16_t limit_time_temp_imm;
 	uint16_t limit_timeout_contact_infect; // 65 sekunden
 	uint16_t limit_timeout_contact_heal; // 65 sekunden
@@ -75,7 +75,7 @@ void write_infect_array(struct beacon *p_tag)
 	uint8_t i;
 	static uint8_t idx_infect=0;
 
-	infect_array[idx_infect][0] = p_tag->status_infect;
+	infect_array[idx_infect][0] = p_tag->status_infect | p_tag->inf_rev;
 	infect_array[idx_infect][1] = infect_time >>16 & 0xff;
 	infect_array[idx_infect][2] = infect_time >>8  & 0xff;
 	infect_array[idx_infect][3] = infect_time >>0  & 0xff;
@@ -118,7 +118,7 @@ void set_inf_params_init(void)
 {
 	params_infect.limit_time_heal = LIMIT_HEAL;
 	params_infect.limit_time_infect = LIMIT_INFECT;
-	params_infect.limit_time_latency = LIMIT_LATENCY;
+	params_infect.limit_time_exposed_alt = LIMIT_EXPOSED_ALT;
 	params_infect.limit_time_recovery = LIMIT_RECOVERY;
 	params_infect.limit_time_suscept = LIMIT_SUSCEPT;
 	params_infect.limit_time_temp_imm = LIMIT_TEMP_IMM;
@@ -272,14 +272,14 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			reset_source();
 		}
 		if( timer_infect	> params_infect.limit_time_infect ){
-			status_change( STATUS_L,p_tag,time_counter);
+			status_change( STATUS_E,p_tag,time_counter);
 			timer_infect = 0;
 			time_kontakt = 0;
 		}
 	}
-	if(p_tag->status_infect == STATUS_L)
+	if(p_tag->status_infect == STATUS_E)
 	{
-		if(timer_state > params_infect.limit_time_latency )
+		if(timer_state > params_infect.limit_time_exposed_alt )
 		{
 			status_change(STATUS_I,p_tag,time_counter);
 		}
@@ -416,11 +416,11 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			}
 			break;
 		}
-		case P_TIME_LATENCY:
+		case P_TIME_EXPOSED_ALT:
 		{
-			if ( params_infect.limit_time_latency != (value1<<(8+SHIFT_P_TIME_LATENCY)) + (value2<<SHIFT_P_TIME_LATENCY))
+			if ( params_infect.limit_time_exposed_alt != (value1<<(8+SHIFT_P_TIME_EXPOSED_ALT)) + (value2<<SHIFT_P_TIME_EXPOSED_ALT))
 			{
-				params_infect.limit_time_latency = (value1<<(8+SHIFT_P_TIME_LATENCY)) + (value2<<SHIFT_P_TIME_LATENCY);
+				params_infect.limit_time_exposed_alt = (value1<<(8+SHIFT_P_TIME_EXPOSED_ALT)) + (value2<<SHIFT_P_TIME_EXPOSED_ALT);
 				inf_params_to_save=1;
 				inf_params_hardcoded=0;
 
