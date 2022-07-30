@@ -36,12 +36,12 @@ static ble_gap_adv_params_t m_adv_params;
 #define TARGET	0xFF // 0xFF for all Beacons, or ID for dedicated beacon
 
 
-#define TIME_SUSCEPT	64
-#define TIME_RECOVER	1800
+#define TIME_SUSCEPT	14400 //4h
+#define TIME_RECOVER	18000
 #define TIME_INFECT		300
 #define TIME_HEAL		180
-#define	TIME_LATENCY	600
-#define INF_REV			3
+#define	TIME_EXPOSED_ALT	2700  //45 min
+#define INF_REV			1
 
 #define TIME_NETWORK	30
 #define TIME_NETZ_FLUSH	240
@@ -61,22 +61,23 @@ static uint8_t raw_advdata[30] = {
 		23, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
 		TARGET,
 //		P_BOOTLOADER		, 1														, 0,
-		P_SET_BEACON_MODE	, 0														, 0,  // Set first param to 1 or 0
+//		P_SET_BEACON_MODE	, 0														, 0,  // Set first param to 1 or 0
 
 //		P_TIME_INFECT		, ((TIME_INFECT >>8 ) & 0xFF)							, ((TIME_INFECT ) & 0xFF),
 //		P_TIME_RECOVER		, ((TIME_RECOVER >>(8+SHIFT_P_TIME_RECOVER)) & 0xFF)	, ((TIME_RECOVER >> SHIFT_P_TIME_RECOVER) & 0xFF),
-//		P_TIME_SUSCEPT		, ((TIME_SUSCEPT >>(8+SHIFT_P_TIME_SUSCEPT)) & 0xFF)	, ((TIME_SUSCEPT >> SHIFT_P_TIME_SUSCEPT) & 0xFF),
-//		P_CHANGE_STATUS		, STATUS_H														, 0, // Set first param die desired status
+		P_TIME_SUSCEPT		, ((TIME_SUSCEPT >>(8+SHIFT_P_TIME_SUSCEPT)) & 0xFF)	, ((TIME_SUSCEPT >> SHIFT_P_TIME_SUSCEPT) & 0xFF),
+		P_TIME_EXPOSED_ALT		, ((TIME_EXPOSED_ALT >>(8+SHIFT_P_TIME_EXPOSED_ALT)) & 0xFF)	, ((TIME_EXPOSED_ALT >> SHIFT_P_TIME_EXPOSED_ALT) & 0xFF),
+//		P_CHANGE_STATUS		, STATUS_S														, 0, // Set first param die desired status
 //		P_SET_INF_ACTIVE	, 1														, 0, // Set first param to 1 or 0
 //		P_INF_RESET_PARAMS	, 0														, 0,
-//		P_INF_REV			, INF_REV												, 0,
-//		P_SHOW_STATUS		, 1														, 0,  // Set first param to 1 or 0
-//		P_RESET_INFECT		, 1														, 0,
+		P_INF_REV			, INF_REV												, 0,
+//		P_SHOW_STATUS		, 0														, 0,  // Set first param to 1 or 0
+		P_RESET_INFECT		, 1														, 0,
 
 //		P_TIME_FLUSH		, ((TIME_NETZ_FLUSH>>8) & 0xFF) 						, (TIME_NETZ_FLUSH & 0xFF),
 //		P_TIME_NETWORK		, ((TIME_NETWORK>>8)&0xFF)								, (TIME_NETWORK & 0xFF),
 //		P_NET_RESET_PARAMS	, 0														, 0,
-//		P_TRACKING_ACTIVE	, 0														, 0, // Set first param to 1 or 0
+//		P_TRACKING_ACTIVE	, 1														, 0, // Set first param to 1 or 0
 
 //		P_ADV_INTERVAL		, ((R_ADV_INTERVAL  >>8)& 0xFF)							, ( R_ADV_INTERVAL & 0xFF),
 //		P_ADV_INTERVAL_PASSIVE , (( R_ADV_INTERVAL_PASSIVE >>8)& 0xFF)				, (R_ADV_INTERVAL_PASSIVE  & 0xFF),
