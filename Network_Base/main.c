@@ -38,7 +38,7 @@
 
 #include "common_defines.h"
 
-#define READOUT_LEVEL			2
+#define READOUT_LEVEL			0
 #define DATA_LEVEL_1	0
 #define DATA_LEVEL_2	1
 #define DATA_LEVEL_3	10
@@ -212,9 +212,9 @@ static void uart_send_data( )
 		time_current |= ((uint32_t)p_data[1])<<8;
 		time_current |= (uint32_t)p_data[2];
 #ifdef IDLIST
-		printf("General: : %3u, %1u, %8lu \r\n", current_id, p_data[3], time_current);
+		printf("General: %3u, %1u, %8lu \r\n", current_id, p_data[3], time_current);
 #else
-		printf("General: :  %1u, %8lu \r\n", p_data[3], time_current);
+		printf("General: %1u, %8lu \r\n", p_data[3], time_current);
 #endif
 //		printf("Status: %1u \r\n", p_data[2]);
 	}
@@ -224,7 +224,7 @@ static void uart_send_data( )
 		time_infect = ((uint16_t)p_data[1])<<16;
 		time_infect |= ((uint16_t)p_data[2])<<8;
 		time_infect |= (uint16_t)p_data[3];
-		printf("Infect: : %3u, %1u, %8lu, ", current_id, p_data[0], time_infect);
+		printf("Infect: %3u, %1u, %8lu, ", current_id, p_data[0], time_infect);
 		for (i=0;i<WIDTH_INFECT_ARRAY-4;i++)
 		{
 			printf("%s%s,", bit_rep[p_data[4+i] >> 4], bit_rep[p_data[4+i]  & 0x0F]);
@@ -250,9 +250,9 @@ static void uart_send_data( )
 			time_duration 	 = ((uint16_t)p_data[IDSHIFT+3+i*NETWORK_SIZEDATA])<<8;
 			time_duration 	|=  (uint16_t)p_data[IDSHIFT+4+i*NETWORK_SIZEDATA];
 #ifdef IDLIST
-			printf("Netz (ID): : %3u, %3u, %8lu, %8u \r\n",current_id,p_data[0+i*NETWORK_SIZEDATA],time_start, time_duration);
+			printf("Netz (ID): %3u, %3u, %8lu, %8u \r\n",current_id,p_data[0+i*NETWORK_SIZEDATA],time_start, time_duration);
 #else
-			printf("Netz (MAC): :  %02x%02x%02x%02x%02x%02x, %02x%02x%02x%02x%02x%02x, %8lu, %8u \r\n",
+			printf("Netz (MAC): %02x%02x%02x%02x%02x%02x, %02x%02x%02x%02x%02x%02x, %8lu, %8u \r\n",
 					current_mac[0],
 					current_mac[1],
 					current_mac[2],
@@ -480,7 +480,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 								 );
 #ifdef IDLIST
 						current_id =  p_adv_report->data[POS_ID];
-						printf("Device ID: %3d; RSSI: %3d\r\n", current_id,p_adv_report->rssi);
+						printf("Device ID and RSSI: %3d, %3d\r\n", current_id,p_adv_report->rssi);
 #else
 						memcpy(&current_mac, p_adv_report->peer_addr.addr,6);
 						printf("RSSI: %3d\r\n", p_adv_report->rssi);

@@ -31,13 +31,13 @@
 
 #define LENGTH_DATA_BUFFER 401 //NO higher than 3700 otherwise Central readout will overflow
 
-#define STATUS_S 					0
-#define STATUS_L					1
-#define STATUS_I					2
-#define STATUS_R					3
-#define STATUS_V					4
-#define STATUS_VT					5
-#define STATUS_H					6
+#define STATUS_S 					0  // Susceptible
+#define STATUS_E					1  // Exposed
+#define STATUS_I					2  // Infectious
+#define STATUS_R					3  // Recovered/Removed
+#define STATUS_V					4  // Vaccinated
+#define STATUS_VT					5  // Vaccinated for time?
+#define STATUS_H					6  // Healer
 
 
 //Identifier for all beacon, 3 bytes length
@@ -65,8 +65,8 @@
 #define P_TIME_INFECT		P_BASE_INF+2
 #define P_TIME_HEAL			P_BASE_INF+11
 #define SHIFT_P_TIME_INFECT		0
-#define	P_TIME_LATENCY		P_BASE_INF+3
-#define SHIFT_P_TIME_LATENCY	0
+#define	P_TIME_EXPOSED_ALT		P_BASE_INF+3
+#define SHIFT_P_TIME_EXPOSED_ALT	0
 #define	P_TIME_RECOVER		P_BASE_INF+4
 #define SHIFT_P_TIME_RECOVER	6
 #define	P_TIME_SUSCEPT		P_BASE_INF+5

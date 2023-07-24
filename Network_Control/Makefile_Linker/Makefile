@@ -234,7 +234,7 @@ cleanobj:
 	$(RM) $(BUILD_DIRECTORIES)/*.o
 
 	
-flash_DK: nrf51422_xxac_s130
+flash_DK_Control: nrf51422_xxac_s130
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
 	nrfjprog --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf51  --sectorerase
 	nrfjprog -p -f nrf51

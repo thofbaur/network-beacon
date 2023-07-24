@@ -169,4 +169,4 @@ flash: $(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.hex
 	nrfjprog --reset -f nrf51
 
 erase:
-	nrfjprog --eraseall -f nrf52
+	nrfjprog --eraseall -f nrf51
