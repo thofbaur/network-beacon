@@ -2,7 +2,7 @@ PROJECT_NAME     := secure_dfu_secure_dfu_ble_s130_pca20006
 TARGETS          := bootloader_nrf51822_xxac_s130
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := C:/nRF5_SDK_12.3.0_d7731ad
+SDK_PATH := C:/nRF5_SDK_12.3.0_d7731ad
 PROJ_DIR := ../..
 
 $(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.out: \
@@ -10,91 +10,91 @@ $(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.out: \
 
 # Source files common to all targets
 SRC_FILES += \
-  $(SDK_ROOT)/components/libraries/scheduler/app_scheduler.c \
-  $(SDK_ROOT)/components/libraries/util/app_error_weak.c \
-  $(SDK_ROOT)/components/libraries/timer/app_timer.c \
-  $(SDK_ROOT)/components/libraries/timer/app_timer_appsh.c \
-  $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
-  $(SDK_ROOT)/components/libraries/crc32/crc32.c \
-  $(SDK_ROOT)/components/libraries/ecc/ecc.c \
-  $(SDK_ROOT)/components/libraries/fstorage/fstorage.c \
-  $(SDK_ROOT)/components/libraries/hci/hci_mem_pool.c \
-  $(SDK_ROOT)/components/libraries/util/nrf_assert.c \
-  $(SDK_ROOT)/components/libraries/crypto/nrf_crypto.c \
-  $(SDK_ROOT)/components/libraries/queue/nrf_queue.c \
-  $(SDK_ROOT)/components/libraries/util/sdk_errors.c \
-  $(SDK_ROOT)/components/libraries/sha256/sha256.c \
-  $(SDK_ROOT)/components/boards/boards.c \
-  $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
-  $(SDK_ROOT)/components/drivers_nrf/rng/nrf_drv_rng.c \
-  $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
-  $(SDK_ROOT)/components/libraries/bootloader/ble_dfu/nrf_ble_dfu.c \
+  $(SDK_PATH)/components/libraries/scheduler/app_scheduler.c \
+  $(SDK_PATH)/components/libraries/util/app_error_weak.c \
+  $(SDK_PATH)/components/libraries/timer/app_timer.c \
+  $(SDK_PATH)/components/libraries/timer/app_timer_appsh.c \
+  $(SDK_PATH)/components/libraries/util/app_util_platform.c \
+  $(SDK_PATH)/components/libraries/crc32/crc32.c \
+  $(SDK_PATH)/components/libraries/ecc/ecc.c \
+  $(SDK_PATH)/components/libraries/fstorage/fstorage.c \
+  $(SDK_PATH)/components/libraries/hci/hci_mem_pool.c \
+  $(SDK_PATH)/components/libraries/util/nrf_assert.c \
+  $(SDK_PATH)/components/libraries/crypto/nrf_crypto.c \
+  $(SDK_PATH)/components/libraries/queue/nrf_queue.c \
+  $(SDK_PATH)/components/libraries/util/sdk_errors.c \
+  $(SDK_PATH)/components/libraries/sha256/sha256.c \
+  $(SDK_PATH)/components/boards/boards.c \
+  $(SDK_PATH)/components/drivers_nrf/common/nrf_drv_common.c \
+  $(SDK_PATH)/components/drivers_nrf/rng/nrf_drv_rng.c \
+  $(SDK_PATH)/components/drivers_nrf/hal/nrf_nvmc.c \
+  $(SDK_PATH)/components/libraries/bootloader/ble_dfu/nrf_ble_dfu.c \
   $(PROJ_DIR)/dfu-cc.pb.c \
   $(PROJ_DIR)/dsa_public_key.c \
   $(PROJ_DIR)/dfu_req_handling.c \
   $(PROJ_DIR)/main.c \
   $(PROJ_DIR)/nrf_dfu.c \
-  $(SDK_ROOT)/components/ble/common/ble_advdata.c \
-  $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
-  $(SDK_ROOT)/components/ble/common/ble_srv_common.c \
-  $(SDK_ROOT)/external/nano-pb/pb_common.c \
-  $(SDK_ROOT)/external/nano-pb/pb_decode.c \
-  $(SDK_ROOT)/components/toolchain/gcc/gcc_startup_nrf51.S \
-  $(SDK_ROOT)/components/toolchain/system_nrf51.c \
-  $(SDK_ROOT)/components/softdevice/common/softdevice_handler/softdevice_handler.c \
-  $(SDK_ROOT)/components/softdevice/common/softdevice_handler/softdevice_handler_appsh.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_app_start.c \
-  $(SDK_ROOT)/components/libraries/bootloader/nrf_bootloader_info.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_flash.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_mbr.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_settings.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_transport.c \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_utils.c \
+  $(SDK_PATH)/components/ble/common/ble_advdata.c \
+  $(SDK_PATH)/components/ble/common/ble_conn_params.c \
+  $(SDK_PATH)/components/ble/common/ble_srv_common.c \
+  $(SDK_PATH)/external/nano-pb/pb_common.c \
+  $(SDK_PATH)/external/nano-pb/pb_decode.c \
+  $(SDK_PATH)/components/toolchain/gcc/gcc_startup_nrf51.S \
+  $(SDK_PATH)/components/toolchain/system_nrf51.c \
+  $(SDK_PATH)/components/softdevice/common/softdevice_handler/softdevice_handler.c \
+  $(SDK_PATH)/components/softdevice/common/softdevice_handler/softdevice_handler_appsh.c \
+  $(SDK_PATH)/components/libraries/bootloader/nrf_bootloader.c \
+  $(SDK_PATH)/components/libraries/bootloader/nrf_bootloader_app_start.c \
+  $(SDK_PATH)/components/libraries/bootloader/nrf_bootloader_info.c \
+  $(SDK_PATH)/components/libraries/bootloader/dfu/nrf_dfu_flash.c \
+  $(SDK_PATH)/components/libraries/bootloader/dfu/nrf_dfu_mbr.c \
+  $(SDK_PATH)/components/libraries/bootloader/dfu/nrf_dfu_settings.c \
+  $(SDK_PATH)/components/libraries/bootloader/dfu/nrf_dfu_transport.c \
+  $(SDK_PATH)/components/libraries/bootloader/dfu/nrf_dfu_utils.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
-  $(SDK_ROOT)/components/drivers_nrf/rng \
-  $(SDK_ROOT)/components/device \
-  $(SDK_ROOT)/components/drivers_nrf/hal \
-  $(SDK_ROOT)/components/libraries/sha256 \
-  $(SDK_ROOT)/components/libraries/crc32 \
-  $(SDK_ROOT)/components/libraries/experimental_section_vars \
+  $(SDK_PATH)/components/drivers_nrf/rng \
+  $(SDK_PATH)/components/device \
+  $(SDK_PATH)/components/drivers_nrf/hal \
+  $(SDK_PATH)/components/libraries/sha256 \
+  $(SDK_PATH)/components/libraries/crc32 \
+  $(SDK_PATH)/components/libraries/experimental_section_vars \
   $(PROJ_DIR) \
-  $(SDK_ROOT)/components/libraries/fstorage \
-  $(SDK_ROOT)/components/libraries/util \
-  $(SDK_ROOT)/components \
-  $(SDK_ROOT)/components/softdevice/common/softdevice_handler \
-  $(SDK_ROOT)/components/libraries/timer \
-  $(SDK_ROOT)/components/drivers_nrf/clock \
-  $(SDK_ROOT)/components/softdevice/s130/headers \
+  $(SDK_PATH)/components/libraries/fstorage \
+  $(SDK_PATH)/components/libraries/util \
+  $(SDK_PATH)/components \
+  $(SDK_PATH)/components/softdevice/common/softdevice_handler \
+  $(SDK_PATH)/components/libraries/timer \
+  $(SDK_PATH)/components/drivers_nrf/clock \
+  $(SDK_PATH)/components/softdevice/s130/headers \
   ../config \
-  $(SDK_ROOT)/components/libraries/log/src \
-  $(SDK_ROOT)/components/libraries/bootloader/dfu \
-  $(SDK_ROOT)/components/drivers_nrf/delay \
-  $(SDK_ROOT)/components/ble/common \
-  $(SDK_ROOT)/components/drivers_nrf/common \
-  $(SDK_ROOT)/components/libraries/svc \
-  $(SDK_ROOT)/components/libraries/scheduler \
-  $(SDK_ROOT)/components/libraries/log \
-  $(SDK_ROOT)/components/libraries/hci \
-  $(SDK_ROOT)/components/boards \
-  $(SDK_ROOT)/components/libraries/bootloader \
-  $(SDK_ROOT)/components/libraries/crypto \
-  $(SDK_ROOT)/components/toolchain \
-  $(SDK_ROOT)/components/toolchain/cmsis/include \
-  $(SDK_ROOT)/external/micro-ecc/micro-ecc \
-  $(SDK_ROOT)/components/libraries/bootloader/ble_dfu \
-  $(SDK_ROOT)/external/nano-pb \
-  $(SDK_ROOT)/components/libraries/ecc \
-  $(SDK_ROOT)/components/softdevice/s130/headers/nrf51 \
-  $(SDK_ROOT)/components/libraries/queue \
-  $(SDK_ROOT)/components/toolchain/gcc \
-  $(SDK_ROOT)/components/drivers_nrf/rtc \
+  $(SDK_PATH)/components/libraries/log/src \
+  $(SDK_PATH)/components/libraries/bootloader/dfu \
+  $(SDK_PATH)/components/drivers_nrf/delay \
+  $(SDK_PATH)/components/ble/common \
+  $(SDK_PATH)/components/drivers_nrf/common \
+  $(SDK_PATH)/components/libraries/svc \
+  $(SDK_PATH)/components/libraries/scheduler \
+  $(SDK_PATH)/components/libraries/log \
+  $(SDK_PATH)/components/libraries/hci \
+  $(SDK_PATH)/components/boards \
+  $(SDK_PATH)/components/libraries/bootloader \
+  $(SDK_PATH)/components/libraries/crypto \
+  $(SDK_PATH)/components/toolchain \
+  $(SDK_PATH)/components/toolchain/cmsis/include \
+  $(SDK_PATH)/external/micro-ecc/micro-ecc \
+  $(SDK_PATH)/components/libraries/bootloader/ble_dfu \
+  $(SDK_PATH)/external/nano-pb \
+  $(SDK_PATH)/components/libraries/ecc \
+  $(SDK_PATH)/components/softdevice/s130/headers/nrf51 \
+  $(SDK_PATH)/components/libraries/queue \
+  $(SDK_PATH)/components/toolchain/gcc \
+  $(SDK_PATH)/components/drivers_nrf/rtc \
   
 # Libraries common to all targets
 LIB_FILES += \
-  $(SDK_ROOT)/external/micro-ecc/nrf51_armgcc/armgcc/micro_ecc_lib_nrf51.a \
+  $(SDK_PATH)/external/micro-ecc/nrf51_armgcc/armgcc/micro_ecc_lib_nrf51.a \
 
 # C flags common to all targets
 CFLAGS += -DSWI_DISABLE0
@@ -152,7 +152,7 @@ help:
 	@echo following targets are available:
 	@echo 	bootloader_nrf51822_xxac_s130
 
-TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
+TEMPLATE_PATH := $(SDK_PATH)/components/toolchain/gcc
 
 include $(TEMPLATE_PATH)/Makefile.common
 ifeq ($(OS),Windows_NT)
