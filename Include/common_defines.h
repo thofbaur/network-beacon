@@ -19,7 +19,7 @@
 
 
 #ifndef COMMONDEFINES_H_
-#define COMMINDEFINES_H_
+#define COMMONDEFINES_H_
 
 /*
  * Compiler Switches to de-acitvate functionality
