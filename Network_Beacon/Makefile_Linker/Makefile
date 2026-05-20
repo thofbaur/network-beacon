@@ -4,18 +4,30 @@ export OUTPUT_FILENAME
 #MAKEFILE_NAME := $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 MAKEFILE_NAME := $(MAKEFILE_LIST)
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME) ) 
-SDK_PATH = C:/nRF5_SDK_12.3.0_d7731ad
+SDK_PATH = D:/nRF5_SDK_12.3.0_d7731ad
 #SDK_PATH = D:/Privat/nRF5_SDK_11.0.0_89a8197
 TEMPLATE_PATH = $(SDK_PATH)/components/toolchain/gcc
 
-ifeq ($(OS),Windows_NT)
-include $(TEMPLATE_PATH)/Makefile.windows
-else
-include $(TEMPLATE_PATH)/Makefile.posix
-endif
 
+GNU_INSTALL_ROOT := C:/Program Files (x86)/GNU Tools ARM Embedded/5.4 2016q3
+GNU_VERSION := 5.4.0
+GNU_PREFIX := arm-none-eabi
+
+#ifeq ($(OS),Windows_NT)
+#include $(TEMPLATE_PATH)/Makefile.windows
+#else
+#include $(TEMPLATE_PATH)/Makefile.posix
+#endif
+
+ifeq ($(OS),Windows_NT)
 MK := mkdir
-RM := rm -rf
+RMDIR = cmd /c if exist $(1) rmdir /s /q $(1)
+RMOBJ = cmd /c if exist $(1)\*.o del /q $(1)\*.o
+else
+MK := mkdir -p
+RMDIR = rm -rf $(1)
+RMOBJ = rm -f $(1)/*.o
+endif
 
 #echo suspend
 ifeq ("$(VERBOSE)","1")
@@ -25,14 +37,14 @@ NO_ECHO := @
 endif
 
 # Toolchain commands
-CC              := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-gcc'
-AS              := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-as'
-AR              := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ar' -r
-LD              := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ld'
-NM              := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-nm'
-OBJDUMP         := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objdump'
-OBJCOPY         := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objcopy'
-SIZE            := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size'
+CC              := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-gcc"
+AS              := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-as"
+AR              := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ar" -r
+LD              := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ld"
+NM              := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-nm"
+OBJDUMP         := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objdump"
+OBJCOPY         := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objcopy"
+SIZE            := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size"
 
 #function for removing duplicates in a list
 remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-out $(firstword $1),$1))))
@@ -43,6 +55,8 @@ $(abspath   ../main.c) \
 $(abspath   ../infection.c) \
 $(abspath   ../network.c) \
 $(abspath   ../radio.c) \
+$(abspath   ../led.c) \
+$(abspath   ../beacon_status.c) \
 $(SDK_PATH)/components/toolchain/system_nrf51.c	\
 $(SDK_PATH)/components/ble/common/ble_advdata.c	\
 $(SDK_PATH)/components/libraries/util/app_error.c	\
@@ -276,16 +290,16 @@ echosize:
 	-@echo ''
 
 clean:
-	$(RM) $(BUILD_DIRECTORIES)
+	$(call RMDIR,$(BUILD_DIRECTORIES))
 
 cleanobj:
-	$(RM) $(BUILD_DIRECTORIES)/*.o
-flash_beacon: nrf51822_xxac_s130
+	$(call RMOBJ,$(BUILD_DIRECTORIES))
+flash_fw_beacon: nrf51822_xxac_s130
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
 	nrfjprog --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf51  --sectorerase
 	nrfjprog -p -f nrf51
 
-flash_sd_beacon: nrf51822_xxac_s130
+flash_sd_fw_beacon: nrf51822_xxac_s130
 	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
 	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --chiperase
 	nrfjprog --reset -f nrf51
@@ -293,7 +307,7 @@ flash_sd_beacon: nrf51822_xxac_s130
 	nrfjprog --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf51  --sectorerase
 	nrfjprog -p -f nrf51
 	
-flash_DK: nrf51422_xxac_s130
+flash_sd_fw_DK: nrf51422_xxac_s130
 	@echo Erasing all
 	nrfjprog --eraseall
 	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex

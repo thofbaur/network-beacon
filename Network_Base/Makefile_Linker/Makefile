@@ -1,9 +1,10 @@
-PROJECT_NAME     := ble_app_uart_c_pca10028_s130
+PROJECT_NAME     := ble_app_netzwerk_zentrale_pca10028_s130
 TARGETS          := nrf51422_xxac
 OUTPUT_DIRECTORY := _build
 
 
-SDK_PATH = C:/nRF5_SDK_12.3.0_d7731ad
+#SDK_PATH = C:/nRF5_SDK_12.3.0_d7731ad
+SDK_PATH = D:/nRF5_SDK_12.3.0_d7731ad
 TEMPLATE_PATH = $(SDK_PATH)/components/toolchain/gcc
 
 PROJ_DIR := ..
@@ -174,7 +175,7 @@ CFLAGS +=  -Wall -Werror -O0 -g3
 CFLAGS += -mfloat-abi=soft
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
-CFLAGS += -fno-builtin --short-enums 
+CFLAGS += -fno-builtin --short-enums
 
 # C++ flags common to all targets
 CXXFLAGS += \
@@ -201,7 +202,7 @@ LDFLAGS += -Wl,--gc-sections
 LDFLAGS += --specs=nano.specs -lc -lnosys
 
 
-.PHONY: $(TARGETS) default all clean help flash_DK flash_softdevice
+.PHONY: $(TARGETS) default all clean help flash_DK_Base flash_softdevice erase
 
 # Default target - first one defined
 default: nrf51422_xxac
@@ -212,10 +213,28 @@ all: nrf51422_xxac
 help:
 	@echo following targets are available:
 	@echo 	nrf51422_xxac
+	@echo 	flash_DK_Base
+	@echo 	flash_softdevice
+	@echo 	erase
 
 TEMPLATE_PATH := $(SDK_PATH)/components/toolchain/gcc
 
+GNU_PREFIX ?= arm-none-eabi
+ifeq ($(OS),Windows_NT)
+ifeq ($(origin GNU_INSTALL_ROOT), undefined)
+GNU_GCC_ON_PATH := $(shell powershell -NoProfile -Command "$$cmd = Get-Command $(GNU_PREFIX)-gcc -ErrorAction SilentlyContinue; if ($$cmd) { $$cmd.Source -replace '\\','/' }")
+ifneq ($(strip $(GNU_GCC_ON_PATH)),)
+override GNU_INSTALL_ROOT := $(patsubst %/bin/$(GNU_PREFIX)-gcc.exe,%,$(GNU_GCC_ON_PATH))
+override GNU_VERSION := $(shell "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-gcc" -dumpversion)
+endif
+endif
+endif
+
 include $(TEMPLATE_PATH)/Makefile.common
+
+ifeq ($(OS),Windows_NT)
+RM := powershell -NoProfile -Command "& { Remove-Item -LiteralPath $$args -Recurse -Force -ErrorAction SilentlyContinue }"
+endif
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
@@ -228,8 +247,8 @@ flash_DK_Base: $(OUTPUT_DIRECTORY)/nrf51422_xxac.hex
 # Flash softdevice
 flash_softdevice:
 	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
-	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --sectorerase 
+	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --sectorerase
 	nrfjprog --reset -f nrf51
 
 erase:
-	nrfjprog --eraseall -f nrf52
+	nrfjprog --eraseall -f nrf51

@@ -2,7 +2,7 @@ PROJECT_NAME     := secure_dfu_secure_dfu_ble_s130_pca20006
 TARGETS          := bootloader_nrf51822_xxac_s130
 OUTPUT_DIRECTORY := _build
 
-SDK_PATH := C:/nRF5_SDK_12.3.0_d7731ad
+SDK_PATH := D:/nRF5_SDK_12.3.0_d7731ad
 PROJ_DIR := ../..
 
 $(OUTPUT_DIRECTORY)/bootloader_nrf51822_xxac_s130.out: \

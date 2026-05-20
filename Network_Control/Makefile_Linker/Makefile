@@ -2,22 +2,31 @@ PROJECT_NAME := ble_app_seuchen_zentrale
  
 
 export OUTPUT_FILENAME
-#MAKEFILE_NAME := $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
-MAKEFILE_NAME := $(MAKEFILE_LIST)
+MAKEFILE_NAME := $(lastword $(MAKEFILE_LIST))
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME) ) 
-SDK_PATH = C:\nRF5_SDK_12.3.0_d7731ad
+SDK_PATH = D:\nRF5_SDK_12.3.0_d7731ad
 #SDK_PATH = D:/Privat/nRF5_SDK_11.0.0_89a8197
 TEMPLATE_PATH = $(SDK_PATH)/components/toolchain/gcc
 
+GNU_INSTALL_ROOT := C:/Program Files (x86)/GNU Tools ARM Embedded/5.4 2016q3
+GNU_VERSION := 5.4.0
+GNU_PREFIX := arm-none-eabi
+
+#ifeq ($(OS),Windows_NT)
+#include $(TEMPLATE_PATH)/Makefile.windows
+#else
+#include $(TEMPLATE_PATH)/Makefile.posix
+#endif
+
 ifeq ($(OS),Windows_NT)
-include $(TEMPLATE_PATH)/Makefile.windows
-else
-include $(TEMPLATE_PATH)/Makefile.posix
-endif
-
 MK := mkdir
-RM := rm -rf
-
+RMDIR = cmd /c if exist $(1) rmdir /s /q $(1)
+RMOBJ = cmd /c if exist $(1)\\*.o del /q $(1)\\*.o
+else
+MK := mkdir -p
+RMDIR = rm -rf $(1)
+RMOBJ = rm -f $(1)/*.o
+endif
 #echo suspend
 ifeq ("$(VERBOSE)","1")
 NO_ECHO := 
@@ -155,7 +164,15 @@ all: clean
 #target for printing all targets
 help:
 	@echo following targets are available:
+	@echo 	all
+	@echo 	clean
+	@echo 	cleanobj
+	@echo 	default
+	@echo 	finalize
+	@echo 	genbin
+	@echo 	genhex
 	@echo 	nrf51422_xxac_s130
+	@echo 	flash_DK_Control
 	@echo 	flash_softdevice
 
 C_SOURCE_FILE_NAMES = $(notdir $(C_SOURCE_FILES))
@@ -228,10 +245,10 @@ echosize:
 	-@echo ''
 
 clean:
-	$(RM) $(BUILD_DIRECTORIES)
+	$(call RMDIR,$(BUILD_DIRECTORIES))
 
 cleanobj:
-	$(RM) $(BUILD_DIRECTORIES)/*.o
+	$(call RMOBJ,$(OBJECT_DIRECTORY))
 
 	
 flash_DK_Control: nrf51422_xxac_s130
@@ -241,6 +258,6 @@ flash_DK_Control: nrf51422_xxac_s130
 	
 ## Flash softdevice
 flash_softdevice:
-	@echo Flashing: s130_nrf51_2.0.0_softdevice.hex
+	@echo Flashing: s130_nrf51_2.0.1_softdevice.hex
 	nrfjprog --program $(SDK_PATH)/components/softdevice/s130/hex/s130_nrf51_2.0.1_softdevice.hex -f nrf51 --chiperase
 	nrfjprog -p -f nrf51
