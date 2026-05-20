@@ -35,7 +35,6 @@
 #include "ble_nus.h"
 
 #include "common_defines.h"
-#include "beacon_common_defines.h"
 #include "interface_defs.h"
 #include "radio_int.h"
 #include "main_int.h"

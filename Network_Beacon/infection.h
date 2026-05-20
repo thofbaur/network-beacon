@@ -44,10 +44,10 @@
 
 
 #include "common_defines.h"
-#include "beacon_common_defines.h"
 #include "interface_defs.h"
 #include "main_int.h"
 #include "radio_int.h"
+#include "led_int.h"
 
 #include "adjustable_params.h"
 

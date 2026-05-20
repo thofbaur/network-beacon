@@ -44,12 +44,12 @@
 //#include "ble_advdata.h"
 
 #include "common_defines.h"
-#include "beacon_common_defines.h"
 #include "interface_defs.h"
 #include "infection_int.h"
 #include "network_int.h"
 #include "radio_int.h"
 #include "adjustable_params.h"
+#include "led_int.h"
 
 
 // General application timer settings.

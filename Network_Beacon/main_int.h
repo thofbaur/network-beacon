@@ -29,7 +29,7 @@ void main_reset_time_sent(void);
 bool main_record_exists(uint16_t file_id, uint16_t key);
 void main_save_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
 bool main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
-void set_status_led(uint8_t * p_show_status_led);
+
 
 
 

@@ -46,7 +46,6 @@
 
 
 #include "common_defines.h"
-#include "beacon_common_defines.h"
 #include "interface_defs.h"
 #include "main_int.h"
 #include "network_int.h"

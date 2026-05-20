@@ -65,6 +65,9 @@ bool inf_params_hardcoded=0;
 #define REC_KEY_INF1    0x4001
 
 
+
+
+
 void reset_source(void)
 {
 	memset(infect_source,0x00,WIDTH_INFECT_ARRAY-4);
@@ -107,7 +110,7 @@ void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_count
 
 		write_infect_array(p_tag);
 		reset_source();
-		set_status_led(&params_infect.show_status_led);
+		set_status_led(&params_infect.show_status_led, p_tag);
 		timer_state = 0;
 	}
 	update_beacon_info();
@@ -167,7 +170,7 @@ void infect_init(struct beacon *p_tag)
 
 	update_tag_status_infect(params_infect.infect_status);
 	update_tag_inf_rev(params_infect.infect_revision);
-	set_status_led(&params_infect.show_status_led);
+	set_status_led(&params_infect.show_status_led, p_tag);
 
 	reset_source();
 	write_infect_array(p_tag);
@@ -496,7 +499,7 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			params_infect.show_status_led = value1;
 			inf_params_to_save=1;
 			inf_params_hardcoded=0;
-			set_status_led(&params_infect.show_status_led);
+			set_status_led(&params_infect.show_status_led, p_tag);
 			break;
 		}
 		default:

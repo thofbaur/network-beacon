@@ -21,9 +21,9 @@
 #include "main.h"
 
 APP_TIMER_DEF(m_main_timer_id);
+//static uint32_t led_status_mask = (1<<LED_RGB_GREEN);
 
 
-static uint32_t led_status_mask = (1<<LED_RGB_GREEN);
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 struct beacon tag ;
 
@@ -33,42 +33,6 @@ const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
 const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
 
 
-void set_status_led(uint8_t * p_show_status_led)
-{
-	uint32_t err_code;
-	err_code = led_softblink_stop();
-	APP_ERROR_CHECK(err_code);
-	if( *p_show_status_led == 1)
-	{
-#ifdef SIMULATEINFECTION
-		switch(tag.status_infect)
-		{
-		case STATUS_I:
-			led_status_mask = (1<<LED_RGB_RED);
-			break;
-		case STATUS_V:
-			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_GREEN);
-			break;
-		case STATUS_VT:
-			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_GREEN);
-			break;
-		case STATUS_R:
-			led_status_mask = (1<<LED_RGB_BLUE);
-			break;
-		case STATUS_H:
-			led_status_mask = (1<<LED_RGB_BLUE) | (1<<LED_RGB_RED);
-			break;
-		default:
-			led_status_mask = (1<< LED_RGB_GREEN);
-		}
-#endif
-	}else
-	{
-		led_status_mask = 1<<LED_RGB_GREEN;
-	}
-	err_code = led_softblink_start(led_status_mask);
-	APP_ERROR_CHECK(err_code);
-}
 
 void update_beacon_info()
 {
@@ -295,7 +259,7 @@ void sys_evt_dispatch(uint32_t sys_evt)
 		sd_nvic_ClearPendingIRQ(SD_EVT_IRQn);
 		sd_power_dcdc_mode_set(0);
 		tag.status_batt = 0x10;
-		update_beacon_info(&tag);
+		update_beacon_info();
 	}
 }
 #ifdef EXECUTEINRAM
@@ -329,16 +293,7 @@ static void power_manage(void)
     APP_ERROR_CHECK(err_code);
 }
 
-static void led_init(void)
-{
-	uint32_t err_code = NRF_SUCCESS;
-	led_sb_init_params_t led_sb_init_param = LED_SB_INIT_DEFAULT_PARAMS(LEDS_MASK);
 
-	led_sb_init_param.duty_cycle_max = 100;
-	led_sb_init_param.off_time_ticks = 100000;// lowered for debug reasons: original value: 201072;
-    err_code = led_softblink_init(&led_sb_init_param);
-    APP_ERROR_CHECK(err_code);
-}
 
 
 // Simple event handler to handle errors during initialization.
@@ -496,8 +451,7 @@ int main(void)
 	APP_ERROR_CHECK(err_code);
 	err_code = sd_power_pof_threshold_set(NRF_POWER_THRESHOLD_V23);
 	APP_ERROR_CHECK(err_code);
-    err_code = led_softblink_start(led_status_mask);
-    APP_ERROR_CHECK(err_code);
+	led_start();
 
 
     for (;; )
