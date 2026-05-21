@@ -28,7 +28,7 @@
 
 static ble_gap_adv_params_t m_adv_params;
 static ble_gap_scan_params_t m_scan_param;
-static uint8_t raw_advdata[7+LENGTH_MANUF];
+static uint8_t raw_advdata[1+LENGTH_PERIPHERAL_DEVICE_NAME+2+1+LENGTH_MANUF];
 static ble_nus_t                        m_nus;                                      /**< Structure to identify the Nordic UART Service. */
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 static uint16_t nus_cnt = 0;
@@ -123,20 +123,20 @@ void scan_init(void)
 
 void advertising_init(void)
 {
-    uint32_t err_code;
+    //uint32_t err_code;
     uint8_t i;
     const uint8_t local_name[3] =PERIPHERAL_DEVICE_NAME;
 
-    raw_advdata[0] = 1+strlen(PERIPHERAL_DEVICE_NAME);
+    raw_advdata[0] = 1+LENGTH_PERIPHERAL_DEVICE_NAME;
     raw_advdata[1] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
-    for (i=0;i<3;i++)
+    for (i=0;i<LENGTH_PERIPHERAL_DEVICE_NAME;i++)
     {
     	raw_advdata[2+i] =local_name[i];
     }
-    raw_advdata[5] = 1+LENGTH_MANUF;
-    raw_advdata[6] = BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA;
-    err_code = sd_ble_gap_adv_data_set(raw_advdata,sizeof(raw_advdata),NULL,0);
-    APP_ERROR_CHECK(err_code);
+    raw_advdata[2+LENGTH_PERIPHERAL_DEVICE_NAME] = 1+LENGTH_MANUF;
+    raw_advdata[3+LENGTH_PERIPHERAL_DEVICE_NAME] = BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA;
+    //err_code = sd_ble_gap_adv_data_set(raw_advdata,sizeof(raw_advdata),NULL,0);
+    //APP_ERROR_CHECK(err_code);
 
     update_beacon_info();
 
@@ -156,7 +156,7 @@ void radio_update_adv(uint8_t manuf_data[LENGTH_MANUF])
 	uint8_t i;
 	for(i=0;i<LENGTH_MANUF;i++)
 	{
-		raw_advdata[7+i]= manuf_data[i];
+		raw_advdata[1+strlen(PERIPHERAL_DEVICE_NAME)+2+1+i]= manuf_data[i];
 	}
     err_code = sd_ble_gap_adv_data_set(raw_advdata,sizeof(raw_advdata),NULL,0);
     APP_ERROR_CHECK(err_code);
@@ -247,6 +247,66 @@ void conn_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
+uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length)
+{
+    uint32_t       err_code = NRF_SUCCESS;
+	err_code = ble_nus_string_send(p_nus, p_string, length);
+	if (err_code == BLE_ERROR_NO_TX_PACKETS ||
+						err_code == NRF_ERROR_INVALID_STATE ||
+						err_code == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+	{
+		return 2;
+	}
+	else if (err_code != NRF_SUCCESS)
+	{
+		APP_ERROR_HANDLER(err_code);
+		return 1;
+	}
+	else
+	{
+		nus_cnt++;
+		return 0;
+	}
+}
+
+uint8_t radio_nus_send_time(ble_nus_t * p_nus)
+{
+
+	uint8_t result_send=0;
+	uint8_t time_sent = 0;
+    uint8_t data[4];
+	static uint32_t time_counter = TIME_ZERO;
+	time_counter = main_get_time_counter();
+
+	while( !time_sent)
+	{
+		//General data
+		data[2] = (time_counter      & 0xff) ;
+		data[1] = (time_counter >>8  & 0xff) ;
+		data[0] = (time_counter >>16 & 0xff) ;
+#ifdef SIMULATEINFECTION
+		data[3] =get_tag_status_infect() | get_tag_status_batt() | get_tag_inf_rev();
+#else
+		data[3] =get_tag_status_batt()  | get_tag_inf_rev();
+#endif
+
+		result_send = radio_nus_send(p_nus,data,4);
+		if( result_send>0)
+		{
+			return time_sent;
+		}
+		else
+		{
+			time_sent = 1;
+		}
+	}
+    return time_sent;
+}
+
+
+
+
+
 #ifdef EXECUTEINRAM
 __attribute__((used, long_call, section(".data"))) static uint8_t nus_push_data(ble_nus_t * p_nus)
 #else
@@ -266,7 +326,7 @@ static uint8_t nus_push_data(ble_nus_t * p_nus)
 	infect_sent = 0;
 
 	//Send current time counter
-   time_sent = main_nus_send_time(p_nus);
+   time_sent = radio_nus_send_time(p_nus);
    // Infection data
 #ifdef SIMULATEINFECTION
    if(time_sent)
@@ -291,6 +351,10 @@ static uint8_t nus_push_data(ble_nus_t * p_nus)
 }
 
 
+
+
+
+
 /**@brief Function for handling the data from the Nordic UART Service.
 *
 * @details This function will process the data received from the Nordic UART BLE Service and send
@@ -307,7 +371,6 @@ void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t length)
 	{
    	nus_active = 1;
    	nus_cnt=0;
-   	main_reset_time_sent();
 #ifdef SIMULATEINFECTION
    	infect_reset_idx_read();
 #endif
@@ -511,27 +574,7 @@ void services_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-uint8_t radio_nus_send(ble_nus_t * p_nus, uint8_t * p_string, uint16_t length)
-{
-    uint32_t       err_code = NRF_SUCCESS;
-	err_code = ble_nus_string_send(p_nus, p_string, length);
-	if (err_code == BLE_ERROR_NO_TX_PACKETS ||
-						err_code == NRF_ERROR_INVALID_STATE ||
-						err_code == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-	{
-		return 2;
-	}
-	else if (err_code != NRF_SUCCESS)
-	{
-		APP_ERROR_HANDLER(err_code);
-		return 1;
-	}
-	else
-	{
-		nus_cnt++;
-		return 0;
-	}
-}
+
 
 void radio_params_init(void)
 {

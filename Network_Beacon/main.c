@@ -27,10 +27,15 @@ APP_TIMER_DEF(m_main_timer_id);
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
 
 
-uint8_t time_sent = 0;
+
 
 const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
 const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
+
+uint32_t	main_get_time_counter(void)
+{
+	return time_counter;
+}
 
 
 void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
@@ -136,44 +141,6 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
     	}
 }
 
-void main_reset_time_sent(void)
-{
-	time_sent = 0;
-}
-
-
-
-uint8_t main_nus_send_time(ble_nus_t * p_nus)
-{
-
-	uint8_t result_send=0;
-
-    uint8_t data[4];
-
-	while( !time_sent)
-	{
-		//General data
-		data[2] = (time_counter      & 0xff) ;
-		data[1] = (time_counter >>8  & 0xff) ;
-		data[0] = (time_counter >>16 & 0xff) ;
-#ifdef SIMULATEINFECTION
-		data[3] =get_tag_status_infect() | get_tag_status_batt() | get_tag_inf_rev();
-#else
-		data[3] =get_tag_status_batt()  | get_tag_inf_rev();
-#endif
-
-		result_send = radio_nus_send(p_nus,data,4);
-		if( result_send>0)
-		{
-			return time_sent;
-		}
-		else
-		{
-			time_sent = 1;
-		}
-	}
-    return time_sent;
-}
 
 void sys_evt_dispatch(uint32_t sys_evt)
 {
@@ -184,8 +151,7 @@ void sys_evt_dispatch(uint32_t sys_evt)
 	{
 		sd_nvic_ClearPendingIRQ(SD_EVT_IRQn);
 		sd_power_dcdc_mode_set(0);
-		set_tag_status_batt(0x10);
-		update_beacon_info();
+		set_tag_status_batt(BATTERY_NOK);
 	}
 }
 #ifdef EXECUTEINRAM

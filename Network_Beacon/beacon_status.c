@@ -83,6 +83,7 @@ uint8_t get_tag_id(void)
 void set_tag_status_batt(uint8_t status_batt)
 {
     tag.status_batt = status_batt;
+    update_beacon_info();
 }
 
 uint8_t get_tag_status_batt(void)
@@ -96,6 +97,7 @@ uint8_t get_tag_status_batt(void)
 void set_tag_status_infect(uint8_t status_infect)
 {
 	tag.status_infect = status_infect;
+    update_beacon_info();
 }
 uint8_t get_tag_status_infect(void)
 {
@@ -107,6 +109,7 @@ uint8_t get_tag_status_infect(void)
 void set_tag_inf_rev(uint8_t inf_rev)
 {
 	tag.inf_rev = (inf_rev)<<SHIFT_INF_REV;
+    update_beacon_info();
 }
 
 uint8_t get_tag_inf_rev(void)

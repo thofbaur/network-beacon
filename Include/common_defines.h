@@ -42,8 +42,12 @@
 
 //Identifier for all beacon, 3 bytes length
 #define PERIPHERAL_DEVICE_NAME      	"DSA"
+#define LENGTH_PERIPHERAL_DEVICE_NAME 	3
 //Identifier for central administration beacon, 3 bytes length
 #define CENTRAL_DEVICE_NAME      	"DSZ"
+#define LENGTH_CENTRAL_DEVICE_NAME 	3
+
+#define BATTERY_NOK		0x10
 
 /* Definition of Parameters to be used by Network Control
  *

@@ -20,11 +20,12 @@
 
 void sys_evt_dispatch(uint32_t sys_evt);
 void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt);
-uint8_t main_nus_send_time(ble_nus_t * p_nus);
-void main_reset_time_sent(void);
+//uint8_t radio_nus_send_time(ble_nus_t * p_nus);
+//void main_reset_time_sent(void);
 bool main_record_exists(uint16_t file_id, uint16_t key);
 void main_save_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
 bool main_read_data(void *p_data, uint8_t length, uint16_t file_id, uint16_t key);
+uint32_t	main_get_time_counter(void);
 
 
 
