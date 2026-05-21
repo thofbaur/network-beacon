@@ -48,7 +48,10 @@
 /* Definition of Parameters to be used by Network Control
  *
  */
-#define P_NULL				0
+
+#define CENTRAL_TARGET_POS        (POS_NAME_START + 5)
+
+ #define P_NULL				0
 // Param_Base_Mask = 0xE0 -> Possible Values: 000 ... 111 << 5
 #define P_BASE_MAIN			0x20
 #define P_BASE_INF			0x40
@@ -61,24 +64,24 @@
 
 // Defines for Infect Parameters should be in one block
 
-#define P_RESET_INFECT		P_BASE_INF+1
-#define P_TIME_INFECT		P_BASE_INF+2
-#define P_TIME_HEAL			P_BASE_INF+11
+#define P_RESET_INFECT			P_BASE_INF+1
+#define P_TIME_INFECT			P_BASE_INF+2
+#define P_TIME_HEAL				P_BASE_INF+11
 #define SHIFT_P_TIME_INFECT		0
 #define	P_TIME_EXPOSED_ALT		P_BASE_INF+3
 #define SHIFT_P_TIME_EXPOSED_ALT	0
-#define	P_TIME_RECOVER		P_BASE_INF+4
+#define	P_TIME_RECOVER			P_BASE_INF+4
 #define SHIFT_P_TIME_RECOVER	6
-#define	P_TIME_SUSCEPT		P_BASE_INF+5
+#define	P_TIME_SUSCEPT			P_BASE_INF+5
 #define SHIFT_P_TIME_SUSCEPT	6
-#define P_TIMEOUT_INFECT	P_BASE_INF+6
-#define P_TIMEOUT_HEAL		P_BASE_INF+7
-#define P_RSSI_INFECT		P_BASE_INF+8
-#define P_CHANGE_STATUS		P_BASE_INF+9
-#define P_INF_REV			P_BASE_INF+10
-#define P_INF_RESET_PARAMS	P_BASE_INF+12
-#define P_SET_INF_ACTIVE	P_BASE_INF+13
-#define P_SHOW_STATUS		P_BASE_INF+14
+#define P_TIMEOUT_INFECT		P_BASE_INF+6
+#define P_TIMEOUT_HEAL			P_BASE_INF+7
+#define P_RSSI_INFECT			P_BASE_INF+8
+#define P_CHANGE_STATUS			P_BASE_INF+9
+#define P_INF_REV				P_BASE_INF+10
+#define P_INF_RESET_PARAMS		P_BASE_INF+12
+#define P_SET_INF_ACTIVE		P_BASE_INF+13
+#define P_SHOW_STATUS			P_BASE_INF+14
 // Defines for Network Parameters should be in one block
 
 #define P_TIME_NETWORK		P_BASE_NETWORK+1

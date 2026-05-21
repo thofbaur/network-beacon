@@ -25,86 +25,12 @@ APP_TIMER_DEF(m_main_timer_id);
 
 
 static uint32_t time_counter = TIME_ZERO;  // changed after initial run
-struct beacon tag ;
+
 
 uint8_t time_sent = 0;
 
 const uint8_t search_central[3] = CENTRAL_DEVICE_NAME;
 const uint8_t search_beacon[3] = PERIPHERAL_DEVICE_NAME;
-
-
-
-void update_beacon_info()
-{
-	uint8_t manuf_data[LENGTH_MANUF];
-
-	network_update_tag();
-#ifdef IDLIST
-	manuf_data[0] = tag.id;
-#endif
-#ifdef SIMULATEINFECTION
-	manuf_data[ADV_LENGTH_ID+1-1] = tag.status_infect | tag.inf_rev;
-#endif
-	manuf_data[LENGTH_MANUF-1] = tag.status_batt | tag.status_data;
-	radio_update_adv(manuf_data);
-}
-
-#ifdef SIMULATEINFECTION
-void update_tag_status_infect(uint8_t status_infect)
-{
-	tag.status_infect = status_infect;
-}
-#endif
-
-void update_tag_inf_rev(uint8_t inf_rev)
-{
-	tag.inf_rev = (inf_rev)<<SHIFT_INF_REV;
-}
-
-void update_tag_status_data(uint8_t *p_status_data)
-{
-	tag.status_data = *p_status_data;
-}
-
-
-
-static void tag_init(void)
-{
-	uint32_t                err_code;
-	ble_gap_addr_t tag_adress;
-
-	err_code = sd_ble_gap_address_get(&tag_adress);
-	APP_ERROR_CHECK(err_code);
-	tag.id = 0;
-	tag.status_batt = 0;
-#ifdef IDLIST
-	uint16_t i;
-	uint8_t j;
-	uint8_t fail;
-
-	for ( i = 0; i<NUM_MACS;i++)
-	{
-		fail = 0;
-		for ( j = 0; j<6 && fail ==0;j++)
-		{
-
-			if ( (tag_adress.addr[j]) != (list_macs[i][j]))
-			{
-				fail = 1;
-
-				break;
-			}
-		}
-		if (fail == 0)
-		{
-			tag.id = i+1;
-			break;
-		}
-	}
-#endif
-
-}
-
 
 
 void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
@@ -120,7 +46,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_central[2] )
     	{
 
-			if( p_gap_evt->params.adv_report.data[POS_NAME_START+5]== 0xFF || p_gap_evt->params.adv_report.data[POS_NAME_START+5] == tag.id)
+			if( p_gap_evt->params.adv_report.data[POS_NAME_START+5]== 0xFF || p_gap_evt->params.adv_report.data[POS_NAME_START+5] == get_tag_id())
 			{
 				// Switch to control mode
 				i_start = POS_NAME_START+5+1;
@@ -154,14 +80,14 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 										{
 											radio_control(P_SET_RAD_ACTIVE,1,0);
 											network_control(P_TRACKING_ACTIVE,1,0);
-											infect_control(P_SET_INF_ACTIVE,1,0,&tag,&time_counter);
+											infect_control(P_SET_INF_ACTIVE,1,0,&time_counter);
 											break;
 										}
 										case 0:
 										{
 											radio_control(P_SET_RAD_ACTIVE,0,0);
 											network_control(P_TRACKING_ACTIVE,0,0);
-											infect_control(P_SET_INF_ACTIVE,0,0,&tag,&time_counter);
+											infect_control(P_SET_INF_ACTIVE,0,0,&time_counter);
 											break;
 										}
 									break;
@@ -174,7 +100,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 						case P_BASE_INF:
 						{
 							//set an infection parameter
-							infect_control( (p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&tag,&time_counter);
+							infect_control( (p_gap_evt->params.adv_report.data[i] ),p_gap_evt->params.adv_report.data[i+1], p_gap_evt->params.adv_report.data[i+2],&time_counter);
 							break;
 						}
 						#endif
@@ -204,7 +130,7 @@ void evaluate_adv_report(const ble_gap_evt_t   * p_gap_evt)
 			p_gap_evt->params.adv_report.data[POS_NAME_START+2] == search_beacon[2] )
     	{
 			#ifdef SIMULATEINFECTION
-    		infect_evaluate_contact(&tag,p_gap_evt);
+    		infect_evaluate_contact(p_gap_evt);
 			#endif
     		network_evaluate_contact(p_gap_evt);
     	}
@@ -231,9 +157,9 @@ uint8_t main_nus_send_time(ble_nus_t * p_nus)
 		data[1] = (time_counter >>8  & 0xff) ;
 		data[0] = (time_counter >>16 & 0xff) ;
 #ifdef SIMULATEINFECTION
-		data[3] =tag.status_infect | tag.status_batt | tag.inf_rev;
+		data[3] =get_tag_status_infect() | get_tag_status_batt() | get_tag_inf_rev();
 #else
-		data[3] =tag.status_batt ;
+		data[3] =get_tag_status_batt()  | get_tag_inf_rev();
 #endif
 
 		result_send = radio_nus_send(p_nus,data,4);
@@ -258,7 +184,7 @@ void sys_evt_dispatch(uint32_t sys_evt)
 	{
 		sd_nvic_ClearPendingIRQ(SD_EVT_IRQn);
 		sd_power_dcdc_mode_set(0);
-		tag.status_batt = 0x10;
+		set_tag_status_batt(0x10);
 		update_beacon_info();
 	}
 }
@@ -272,7 +198,7 @@ static void timer_main_event_handler(void* p_context)
 	// Increment time since power on
 	time_counter += MAIN_SAMPLE_RATE;
 #ifdef SIMULATEINFECTION
-	infect_main(&tag,&time_counter);
+	infect_main(&time_counter);
 #endif
 	network_main(&time_counter);
 }
@@ -419,7 +345,7 @@ static void system_initialize(void)
 	}
 	network_init();
 #ifdef SIMULATEINFECTION
-	infect_init(&tag);
+	infect_init();
 #endif
 	tag_init();
 	radio_params_init();

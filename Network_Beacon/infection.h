@@ -24,6 +24,8 @@
  *  Created on: 30.03.2018
  *      Author: thofbaur
  */
+#include "common_defines.h"
+
 #ifdef SIMULATEINFECTION
 #ifndef IDLIST
 #error "Simulate infection only works with pre defined ID-List"
@@ -43,11 +45,11 @@
 #include "ble_nus.h"
 
 
-#include "common_defines.h"
 #include "interface_defs.h"
 #include "main_int.h"
 #include "radio_int.h"
 #include "led_int.h"
+#include "beacon_status_int.h"
 
 #include "adjustable_params.h"
 

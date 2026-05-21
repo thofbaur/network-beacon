@@ -51,6 +51,7 @@
 #include "network_int.h"
 #include "infection_int.h"
 #include "adjustable_params.h"
+#include "beacon_status_int.h"
 
 
 #define TX_POWER					-20

@@ -23,6 +23,6 @@
 
 void led_init(void);
 void led_start(void);
-void set_status_led(uint8_t * p_show_status_led, struct beacon *p_tag);
+void set_status_led(uint8_t * p_show_status_led);
 
 #endif

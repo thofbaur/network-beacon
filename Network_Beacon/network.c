@@ -154,7 +154,7 @@ void network_update_tag(void)
 	{
 		status_data = 0;
 	}
-	update_tag_status_data(&status_data);
+	set_tag_status_data(&status_data);
 }
 
 uint8_t network_nus_send_data(ble_nus_t * p_nus)

@@ -73,12 +73,12 @@ void reset_source(void)
 	memset(infect_source,0x00,WIDTH_INFECT_ARRAY-4);
 }
 
-void write_infect_array(struct beacon *p_tag)
+void write_infect_array(void)
 {
 	uint8_t i;
 	static uint8_t idx_infect=0;
 
-	infect_array[idx_infect][0] = p_tag->status_infect | p_tag->inf_rev;
+	infect_array[idx_infect][0] = get_tag_status_infect() | get_tag_inf_rev();
 	infect_array[idx_infect][1] = infect_time >>16 & 0xff;
 	infect_array[idx_infect][2] = infect_time >>8  & 0xff;
 	infect_array[idx_infect][3] = infect_time >>0  & 0xff;
@@ -94,23 +94,23 @@ void write_infect_array(struct beacon *p_tag)
 }
 
 
-void status_change(uint8_t status_new,struct beacon *p_tag, uint32_t *time_counter)
+void status_change(uint8_t status_new, uint32_t *time_counter)
 {
 //	uint8_t i;
 //    uint32_t       err_code;
 
-	if(p_tag->status_infect == status_new)
+	if(get_tag_status_infect() == status_new)
 	{
 		//do nothing
 	}else
 	{
 		infect_time = *time_counter;
 		params_infect.infect_status = status_new;
-		update_tag_status_infect(status_new);
+		set_tag_status_infect(status_new);
 
-		write_infect_array(p_tag);
+		write_infect_array();
 		reset_source();
-		set_status_led(&params_infect.show_status_led, p_tag);
+		set_status_led(&params_infect.show_status_led);
 		timer_state = 0;
 	}
 	update_beacon_info();
@@ -133,7 +133,7 @@ void set_inf_params_init(void)
 	params_infect.infect_revision = INF_REV_INIT;
 	params_infect.show_status_led = INIT_SHOW_STATUS_LED;
 	inf_params_hardcoded=1;
-	update_tag_inf_rev(params_infect.infect_revision);
+	set_tag_inf_rev(params_infect.infect_revision);
 
 }
 
@@ -147,7 +147,7 @@ void infect_save_params(void)
 	}
 }
 
-void infect_init(struct beacon *p_tag)
+void infect_init(void)
 {
 
 	bool ret;
@@ -168,12 +168,12 @@ void infect_init(struct beacon *p_tag)
 
 	infect_time = TIME_ZERO;
 
-	update_tag_status_infect(params_infect.infect_status);
-	update_tag_inf_rev(params_infect.infect_revision);
-	set_status_led(&params_infect.show_status_led, p_tag);
+	set_tag_status_infect(params_infect.infect_status);
+	set_tag_inf_rev(params_infect.infect_revision);
+	set_status_led(&params_infect.show_status_led);
 
 	reset_source();
-	write_infect_array(p_tag);
+	write_infect_array();
 }
 
 
@@ -225,28 +225,28 @@ uint8_t infect_nus_send_data(ble_nus_t * p_nus)
 }
 
 
-void infect_evaluate_contact(struct beacon *p_tag,const ble_gap_evt_t   * p_gap_evt)
+void infect_evaluate_contact(const ble_gap_evt_t   * p_gap_evt)
 {
 	if(params_infect.infect_active)
 	{
 		if( p_gap_evt->params.adv_report.rssi >= params_infect.infect_limit_rssi)
 		{
-			if(  p_tag->status_infect == STATUS_S && \
+			if(  get_tag_status_infect() == STATUS_S && \
 					(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_I && \
-				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev  )
+				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == get_tag_inf_rev()  )
 			{
 				kontakt_infect = 1;
 				add_source(p_gap_evt->params.adv_report.data[POS_ID]);
 			}
 			if(  (p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_MASK) == STATUS_H && \
-				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == p_tag->inf_rev && p_tag->status_infect == STATUS_I)
+				(p_gap_evt->params.adv_report.data[POS_INF_STATUS] & INFECT_REV_MASK) == get_tag_inf_rev() && get_tag_status_infect() == STATUS_I)
 			{
 				kontakt_heal = 1;
 			}
 		}
 	}
 }
-void infect_main(struct beacon *p_tag,uint32_t *time_counter)
+void infect_main(uint32_t *time_counter)
 {
 	static uint32_t time_kontakt = INFECT_TIMEOUT;
 	static uint32_t time_kontakt_heal = HEAL_TIMEOUT;
@@ -257,7 +257,7 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 
 
 
-	if( p_tag->status_infect == STATUS_S){
+	if( get_tag_status_infect() == STATUS_S){
 		if( kontakt_infect==1) {
 			time_kontakt = 0;
 			kontakt_infect = 0;
@@ -275,19 +275,19 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 			reset_source();
 		}
 		if( timer_infect	> params_infect.limit_time_infect ){
-			status_change( STATUS_E,p_tag,time_counter);
+			status_change( STATUS_E,time_counter);
 			timer_infect = 0;
 			time_kontakt = 0;
 		}
 	}
-	if(p_tag->status_infect == STATUS_E)
+	if(get_tag_status_infect() == STATUS_E)
 	{
 		if(timer_state > params_infect.limit_time_exposed_alt )
 		{
-			status_change(STATUS_I,p_tag,time_counter);
+			status_change(STATUS_I,time_counter);
 		}
 	}
-	if( p_tag->status_infect == STATUS_I)
+	if( get_tag_status_infect() == STATUS_I)
 	{
 		if( kontakt_heal==1)
 		{
@@ -311,34 +311,34 @@ void infect_main(struct beacon *p_tag,uint32_t *time_counter)
 		}
 		if( timer_heal	> params_infect.limit_time_heal )
 		{
-			status_change( STATUS_S,p_tag,time_counter);
+			status_change( STATUS_S,time_counter);
 			timer_infect = 0;
 			time_kontakt = 0;
 			timer_heal = 0;
 		}
 	}
-	if(p_tag->status_infect == STATUS_I)
+	if(get_tag_status_infect() == STATUS_I)
 	{
 		if(timer_state > params_infect.limit_time_recovery  )
 		{
-			status_change(STATUS_R,p_tag,time_counter);
+			status_change(STATUS_R,time_counter);
 		}
 		else if(timer_state > params_infect.limit_time_suscept  )
 		{
-			status_change(STATUS_S,p_tag,time_counter);
+			status_change(STATUS_S,time_counter);
 		}
 	}
-	if(p_tag->status_infect == STATUS_VT)
+	if(get_tag_status_infect() == STATUS_VT)
 	{
 		if(timer_state > params_infect.limit_time_temp_imm )
 		{
-			status_change(STATUS_S,p_tag,time_counter);
+			status_change(STATUS_S,time_counter);
 		}
 	}
 }
 
 
-void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct beacon *p_tag,uint32_t *p_time_counter)
+void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,uint32_t *p_time_counter)
 {
 	switch (switch_param)
 	{
@@ -350,19 +350,19 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 				kontakt_heal = 0;
 				reset_source();
 				add_source(ID_ZENTRALE);
-				status_change(INFECT_INITIAL_STATUS,p_tag,p_time_counter);
+				status_change(INFECT_INITIAL_STATUS,p_time_counter);
 			}
 			break;
 		}
 		case P_CHANGE_STATUS:
 		{
-			if(p_tag->status_infect !=value1)
+			if(get_tag_status_infect() !=value1)
 			{
 				kontakt_infect = 0;
 				kontakt_heal = 0;
 				reset_source();
 				add_source(ID_ZENTRALE);
-				status_change(value1,p_tag,p_time_counter);
+				status_change(value1,p_time_counter);
 				inf_params_to_save =1;
 				inf_params_hardcoded=0;
 			}
@@ -373,7 +373,7 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			if(!inf_params_hardcoded)
 			{
 				set_inf_params_init();
-				status_change(params_infect.infect_status,p_tag,p_time_counter);
+				status_change(params_infect.infect_status,p_time_counter);
 
 				update_beacon_info();
 				inf_params_to_save=1;
@@ -386,13 +386,13 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			if (params_infect.infect_revision != value1 )
 			{
 				params_infect.infect_revision = value1;
-				update_tag_inf_rev(params_infect.infect_revision);
+				set_tag_inf_rev(params_infect.infect_revision);
 
 				kontakt_infect = 0;
 				kontakt_heal = 0;
 				reset_source();
 				add_source(ID_ZENTRALE);
-				status_change(INFECT_INITIAL_STATUS,p_tag,p_time_counter);
+				status_change(INFECT_INITIAL_STATUS,p_time_counter);
 				inf_params_to_save=1;
 				inf_params_hardcoded=0;
 			}
@@ -499,7 +499,7 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,struct 
 			params_infect.show_status_led = value1;
 			inf_params_to_save=1;
 			inf_params_hardcoded=0;
-			set_status_led(&params_infect.show_status_led, p_tag);
+			set_status_led(&params_infect.show_status_led);
 			break;
 		}
 		default:

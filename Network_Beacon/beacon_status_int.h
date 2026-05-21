@@ -17,14 +17,17 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
 
-#include "nrf_drv_config.h"  //board specific data, ToDo Alex: Durch AOM Board Daten ersetzen.
+struct beacon * tag_init(void);
+void update_beacon_info(void);
+void set_tag_status_infect(uint8_t status_infect);
+uint8_t get_tag_status_infect(void);
+void set_tag_inf_rev(uint8_t inf_rev);
+uint8_t get_tag_inf_rev(void);
+void set_tag_status_data(uint8_t *p_status_data);
+void set_tag_status_batt(uint8_t status_batt);
+uint8_t get_tag_status_batt(void);
+uint8_t get_tag_id(void);
 
-#include "led_softblink.h"
-#include "interface_defs.h"
-#include "beacon_status_int.h"
+
+

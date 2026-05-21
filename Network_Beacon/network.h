@@ -39,5 +39,6 @@
 #include "radio_int.h"
 #include "main_int.h"
 #include "adjustable_params.h"
+#include "beacon_status_int.h"
 
 

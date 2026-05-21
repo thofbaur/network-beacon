@@ -45,7 +45,7 @@ void led_start(void)
 
 
 
-void set_status_led(uint8_t * p_show_status_led, struct beacon *p_tag)
+void set_status_led(uint8_t * p_show_status_led)
 {
 	uint32_t err_code;
 	err_code = led_softblink_stop();
@@ -53,7 +53,7 @@ void set_status_led(uint8_t * p_show_status_led, struct beacon *p_tag)
 	if( *p_show_status_led == 1)
 	{
 #ifdef SIMULATEINFECTION
-		switch(p_tag->status_infect)
+		switch(get_tag_status_infect())
 		{
 		case STATUS_I:
 			led_status_mask = (1<<LED_RGB_RED);
