@@ -257,7 +257,7 @@ Bei einem Seuchenereignis wird ein entsprechender Zustandsübergang angestoßen 
 
 Die Zeit für Scanning und Advertising sind aktuell fest eingestellt auf:
 \begin{itemize}
-\item \#define ADV\_INTERVAL				110 // Advertisement interval in milliseconds
+\item \#define ADV\_INTERVAL				100 // Advertisement interval in milliseconds
 \item \#define SCAN\_WINDOW\_MS				125  //scan window in milliseconds
 \item \#define SCAN\_INTERVAL\_MS			10000  // scan interval in milliseconds
 \end{itemize}
@@ -272,7 +272,19 @@ Die veränderbaren Parameter sind in Network\_Beacon/main.h defaultmäßig wie f
 \item \#define LIMIT\_RESET					3600 // immunity after reset in seconds 1800
 \item \#define LIMIT\_RSSI		 			-80 // entspricht ca. 1-2m Abstand
 \end{itemize}
-
+\subsection{Netzwerk}
+Die Aufzeichnung des Netzwerks erfolgt über Aufzeichnen der Kontakte die über eine definierbare Zeit gesehen werden.
+Es werden nur die bekannten Beacons überwacht, entweder per ID (1 Byte) oder per MAC Adresse (6 Byte). Es wird ein Array vorgehalten, in dem für jedes bekannte Beacon die folgenden Informationen gespeichert werden:
+\begin{itemize}
+	\item Sekunden seit der Kontakt aktiv ist. 3 Byte
+	\item Wurde der Kontakt im letzten Zyklus gesehen. 1 Byte
+	\item Ist der Kontakt gerade aktiv. 1 Byte
+	\item Wie lange wurde der Kontakt nicht mehr gesehen (Timeout). 1 Byte
+\end{itemize}
+Erreicht ein Kontakt das Limit für den Timeout und bestand der Kontakt länger als das definierte Limit, wird der Kontakt in den Datenspeicher geschrieben. Der Datenspeicher ist ein Ringspeicher mit folgenden Informationen:
+\Begin{itemize}
+	\item
+\end{itemize}
 \subsection{Auslesen der Daten}
 
 Das Auslesen der Daten erfolgt über die Firmware im Ordner Network\_Base. Diese wird auf ein DK augespielt das über ein USB Kabel an einen PC angeschlossen ist. Die Anwendung scannt laufend nach allen Paketen von DSA-Beacons. Falls der Datenstand des Ringspeichers für die sozialen Kontakte über dem eingestellten limit ist, wird eine Connection aufgebaut und folgendes ausgelesen:
@@ -352,4 +364,9 @@ Es kann eine gexf Datei für Gephi erstellt werden, die den zeitlichen Verlauf d
 \item  Speichern von veränderten Parametern im Flash
 \item  ? Implementierung der Seuchenparameter im Sender, d.h. Sender übermittelt wie ansteckend seine Seuche ist.
 \end{itemize}
+
+\subsection{Setup 2026}
+Visual Studio Code 1.119.0
+Entpacken des SDK 12.3 in einen bekannten Ordner und anpassen des Pfades in allen Makefiles auf diesen Ordner.
+nrf-command-line-tools-10.24.2-x64
 \end{document}
