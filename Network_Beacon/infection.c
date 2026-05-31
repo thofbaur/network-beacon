@@ -113,7 +113,6 @@ void status_change(uint8_t status_new, uint32_t *time_counter)
 		set_status_led(&params_infect.show_status_led);
 		timer_state = 0;
 	}
-	update_beacon_info();
 
 }
 
@@ -375,7 +374,6 @@ void infect_control(uint8_t switch_param, uint8_t value1, uint8_t value2,uint32_
 				set_inf_params_init();
 				status_change(params_infect.infect_status,p_time_counter);
 
-				update_beacon_info();
 				inf_params_to_save=1;
 			}
 			break;
