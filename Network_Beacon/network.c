@@ -39,18 +39,22 @@ static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
 
 bool	net_params_to_save=0;
-bool net_params_hardcoded=0;
+bool	net_params_hardcoded=0;
 #define FILE_ID_NET     0x8001
 #define REC_KEY_NET	    0x8001
+
+
 
 #ifdef IDLIST
 
 static uint8_t  contact_tracker[MAX_NUM_TAGS-1][6];// Ctr 3 Byte;  Timeout 1 Byte, Contact Seen 1 Byte; Contact Active 1 Byte;
 static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA]; //ID 1 Byte; Ctr Start 3 Byte, Duration 2 Byte
+#define POS_TIMEOUT_CONTACT 5
 #else
 
 static uint8_t  contact_list[LENGTH_CONTACT_LIST][12]; //MAC 6 Byte, Ctr 3 Byte; Contact Seen 1 Byte; Contact Active 1 Byte; Timeout 1 Byte,
 static uint8_t	data_array[LENGTH_DATA_BUFFER][NETWORK_SIZEDATA];//MAC 6 Byte, Start Ctr 3 Byte;Duration 2 Byte
+#define POS_TIMEOUT_CONTACT 11
 #endif
 
 void set_net_params_init(void)
@@ -97,13 +101,13 @@ void network_init()
 	memset(&contact_tracker,0x00,(MAX_NUM_TAGS-1)*NETWORK_SIZEDATA);
 	for (i=0;i<(MAX_NUM_TAGS-1);i++)
 	{
-		contact_tracker[i][5] = params_network.limit_timeout_contact;
+		contact_tracker[i][POS_TIMEOUT_CONTACT] = params_network.limit_timeout_contact;
 	}
 #else
 	memset(&contact_list,0x00,LENGTH_CONTACT_LIST*12);
 	for (i=0;i<LENGTH_CONTACT_LIST;i++)
 	{
-		contact_list[i][11] = params_network.limit_timeout_contact;
+		contact_list[i][POS_TIMEOUT_CONTACT] = params_network.limit_timeout_contact;
 	}
 #endif
 }
@@ -359,7 +363,7 @@ void network_main(uint32_t *p_time_counter)
 		{
 			if( contact_tracker[i][4] == 1) // contact entry  active
 			{
-				if( contact_tracker[i][5] >= params_network.limit_timeout_contact) // check if timeout is reached
+				if( contact_tracker[i][POS_TIMEOUT_CONTACT] >= params_network.limit_timeout_contact) // check if timeout is reached
 				{
 					delta_contact = ((uint32_t)contact_tracker[i][2]);
 					delta_contact |=((uint32_t)contact_tracker[i][1])<<8;
@@ -376,7 +380,7 @@ void network_main(uint32_t *p_time_counter)
 				}
 				else
 				{
-					contact_tracker[i][5] += MAIN_SAMPLE_RATE;
+					contact_tracker[i][POS_TIMEOUT_CONTACT] += MAIN_SAMPLE_RATE;
 				}
 			}
 		}
@@ -419,7 +423,7 @@ void network_main(uint32_t *p_time_counter)
 			{
 				if( contact_list[i][10] == 1) // contact entry  active
 				{
-					if( contact_list[i][11] >= params_network.limit_timeout_contact) // Check if timeout is reached
+					if( contact_list[i][POS_TIMEOUT_CONTACT] >= params_network.limit_timeout_contact) // Check if timeout is reached
 					{
 						delta_contact = ((uint32_t)contact_list[i][8]);
 						delta_contact |=((uint32_t)contact_list[i][7])<<8;
@@ -434,7 +438,7 @@ void network_main(uint32_t *p_time_counter)
 					}
 					else
 					{
-						contact_list[i][11] += MAIN_SAMPLE_RATE;
+						contact_list[i][POS_TIMEOUT_CONTACT] += MAIN_SAMPLE_RATE;
 					}
 				}
 			}
