@@ -25,3 +25,5 @@ ipch/
 
 # Nordic/GNU Make build outputs
 _build/
+
+build*/
