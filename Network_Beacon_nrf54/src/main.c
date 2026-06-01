@@ -15,12 +15,13 @@
 
 #include "radio.h"
 
+
 int main(void)
 {
     int err;
 
 
-	printk("Starting Scanner/Advertiser Demo\n");
+	printk("Starting DSA Network Beacon\n");
 
 	/* Initialize the Bluetooth Subsystem */
 	err = radio_init();

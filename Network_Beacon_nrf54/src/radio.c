@@ -1,5 +1,5 @@
 #include <zephyr/bluetooth/bluetooth.h>
-
+#include "radio_ids.h"
 /* Radio Parameters
  *
  */
@@ -51,7 +51,44 @@ struct {
 struct bt_le_scan_param scan_param;
 struct bt_le_adv_param adv_params;
 
+static uint8_t device_id;
+
 bool radio_params_hardcoded=0;
+
+
+
+static uint8_t lookup_device_id(const bt_addr_t *addr)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(device_id_table); i++) {
+        if (bt_addr_cmp(addr, &device_id_table[i].addr) == 0) {
+            return device_id_table[i].id;
+        }
+    }
+
+    return 0xff; // unknown / unassigned
+}
+
+uint8_t get_device_id()
+{
+    bt_addr_le_t addrs[CONFIG_BT_ID_MAX];
+    size_t count = CONFIG_BT_ID_MAX;
+
+    // Retrieve all addresses registered for the Bluetooth stack
+    bt_id_get(addrs, &count);
+	device_id = lookup_device_id(&addrs[0].a);
+
+    if (count > 0) {
+        char addr_str[BT_ADDR_LE_STR_LEN];
+        bt_addr_le_to_str(&addrs[0], addr_str, sizeof(addr_str));
+        printk("Device Address: %s\n", addr_str);
+    
+	
+		printk("Raw bytes: %02x %02x %02x %02x %02x %02x\n",
+       	addrs[0].a.val[0], addrs[0].a.val[1], addrs[0].a.val[2],
+       	addrs[0].a.val[3], addrs[0].a.val[4], addrs[0].a.val[5]);
+	}
+	return device_id;
+}
 
 void set_radio_params_init(void)
 {
@@ -85,6 +122,7 @@ void adv_init(void)
 	adv_params.sid = 0U;
 	adv_params.secondary_max_skip = 0U;
 	adv_params.options = BT_LE_ADV_NCONN_IDENTITY;
+	mfg_data[0] = get_device_id();
 }
 
 void set_ble_params(uint8_t mode)
@@ -133,8 +171,8 @@ int radio_start(void)
 {
     int err;
 	set_radio_params_init();
-	adv_init();
 	scan_init();
+	adv_init();
 	set_ble_params(params_radio.mode);
 	/* Start advertising */
 	err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad),
