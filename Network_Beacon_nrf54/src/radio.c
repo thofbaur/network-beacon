@@ -26,10 +26,12 @@
 #define SCAN_INTERVAL_LOW_ACTIVITY				BT_GAP_MS_TO_SCAN_INTERVAL(SCAN_INTERVAL_MS_LOW_ACTIVITY)  // scan interval in 0.625 mus
 #define HIGH_ACTIVITY				1
 #define LOW_ACTIVITY				0
-#define INITIAL_MODE				HIGH_ACTIVITY  //1 High Activity, 0 Low Activity
+#define INITIAL_MODE				LOW_ACTIVITY  //1 High Activity, 0 Low Activity
 
+#define ADV_POS_ID 0
+#define ADV_POS_NETWORK_STATUS 2
 
-static uint8_t mfg_data[] = { 0xff, 0xff, 0x00 };
+static uint8_t mfg_data[] = { 0xff, 0x00, 0x00 };
 
 static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, strlen(CONFIG_BT_DEVICE_NAME)),
@@ -107,7 +109,7 @@ void set_radio_params_init(void)
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 		    struct net_buf_simple *buf)
 {
-	mfg_data[2]++;
+	mfg_data[1]++;
 }
 
 void scan_init(void)
@@ -121,8 +123,8 @@ void adv_init(void)
 	adv_params.id = 0U;
 	adv_params.sid = 0U;
 	adv_params.secondary_max_skip = 0U;
-	adv_params.options = BT_LE_ADV_NCONN_IDENTITY;
-	mfg_data[0] = get_device_id();
+	adv_params.options = BT_LE_ADV_OPT_USE_IDENTITY;
+	mfg_data[ADV_POS_ID] = get_device_id();
 }
 
 void set_ble_params(uint8_t mode)
@@ -175,7 +177,7 @@ int radio_start(void)
 	adv_init();
 	set_ble_params(params_radio.mode);
 	/* Start advertising */
-	err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad),
+	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad),
 				      NULL, 0);
 	if (err) {
 		printk("Advertising failed to start (err %d)\n", err);
