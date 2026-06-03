@@ -2,16 +2,24 @@
 
 
 
-struct device_id_entry {
-    bt_addr_t addr;
+struct known_device {
+    bt_addr_le_t addr;
     uint8_t id;
 };
 
-static const struct device_id_entry device_id_table[] = {
+static const struct known_device known_device_table[] = {
     {
         .addr = {
-            .val = { 0xB1, 0x7D, 0x76, 0x1a, 0x92, 0xd1 }  // Developmentkit
+            .type = BT_ADDR_LE_RANDOM,
+            .a = { .val = { 0xB1, 0x7D, 0x76, 0x1a, 0x92, 0xd1 } }  // Developmentkit
         },
         .id = 1,
+    },
+    {
+        .addr = {
+            .type = BT_ADDR_LE_RANDOM,
+            .a = { .val = { 0x2D, 0xFF, 0x12, 0xB9, 0x17, 0xC8 } }  // altes nrf51822 beacon
+        },
+        .id = 104,
     },
 };

@@ -1,6 +1,9 @@
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/gap.h>
+//#include <bluetooth/scan.h>
 #include "radio_ids.h"
 #include "network.h"
+#include "radio.h"
 /* Radio Parameters
  *
  */
@@ -27,10 +30,9 @@
 #define SCAN_INTERVAL_LOW_ACTIVITY				BT_GAP_MS_TO_SCAN_INTERVAL(SCAN_INTERVAL_MS_LOW_ACTIVITY)  // scan interval in 0.625 mus
 #define HIGH_ACTIVITY				1
 #define LOW_ACTIVITY				0
-#define INITIAL_MODE				LOW_ACTIVITY  //1 High Activity, 0 Low Activity
+#define INITIAL_MODE				HIGH_ACTIVITY  //1 High Activity, 0 Low Activity
 
-#define ADV_POS_ID 0
-#define ADV_POS_NETWORK_STATUS 2
+
 
 static uint8_t mfg_data[] = { 0xff, 0x00, 0x00 };
 
@@ -82,11 +84,11 @@ bool radio_params_hardcoded=0;
 
 
 
-uint8_t lookup_device_id(const bt_addr_t *addr)
+uint8_t lookup_device_id(const bt_addr_le_t *addr)
 {
-    for (size_t i = 0; i < ARRAY_SIZE(device_id_table); i++) {
-        if (bt_addr_cmp(addr, &device_id_table[i].addr) == 0) {
-            return device_id_table[i].id;
+    for (size_t i = 0; i < ARRAY_SIZE(known_device_table); i++) {
+        if (bt_addr_le_cmp(addr, &known_device_table[i].addr) == 0) {
+            return known_device_table[i].id;
         }
     }
 
@@ -100,7 +102,7 @@ uint8_t get_device_id()
 
     // Retrieve all addresses registered for the Bluetooth stack
     bt_id_get(addrs, &count);
-	device_id = lookup_device_id(&addrs[0].a);
+	device_id = lookup_device_id(&addrs[0]);
 
     if (count > 0) {
         char addr_str[BT_ADDR_LE_STR_LEN];
@@ -184,8 +186,17 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
 void scan_init(void)
 {
-    scan_param.type = BT_LE_SCAN_TYPE_PASSIVE;
-	scan_param.options = BT_LE_SCAN_OPT_NONE;
+    int err;
+
+
+	for (size_t i = 0; i < ARRAY_SIZE(known_device_table); i++) 
+	{
+    	err = bt_le_filter_accept_list_add(&known_device_table[i].addr);
+		if (err) {
+    	    printk("Failed to add to filter list (err %d)\n", err);
+		return;
+    }
+		}
 }
 
 void adv_init(void)
@@ -197,8 +208,19 @@ void adv_init(void)
 	mfg_data[ADV_POS_ID] = get_device_id();
 }
 
+void adv_update(int8_t position, uint8_t value)
+{
+	if (position < sizeof(mfg_data)) {
+		mfg_data[position] = value;
+	}
+	//
+	bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+}
+
 void set_ble_params(uint8_t mode)
 {
+	scan_param.type = BT_LE_SCAN_TYPE_PASSIVE;
+	scan_param.options = BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
 	switch(mode)
 			{
 				case LOW_ACTIVITY:
@@ -219,10 +241,6 @@ void set_ble_params(uint8_t mode)
 				}
 			}
 }
-
-
-
-
 
 int radio_init(void)
 {
