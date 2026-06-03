@@ -1,5 +1,6 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include "radio_ids.h"
+#include "network.h"
 /* Radio Parameters
  *
  */
@@ -53,13 +54,35 @@ struct {
 struct bt_le_scan_param scan_param;
 struct bt_le_adv_param adv_params;
 
-static uint8_t device_id;
+enum target_action {
+    ACTION_NONE = 0,
+    ACTION_DSA,
+    ACTION_DST,
+    ACTION_DSZ,
+};
 
+struct target_device {
+    const char *name;
+    enum target_action action;
+};
+
+static const struct target_device target_devices[] = {
+    { .name = "DSA",    .action = ACTION_DSA },
+    { .name = "DSZ", 	.action = ACTION_DSZ },
+    { .name = "DST", 	.action = ACTION_DST },
+};
+struct name_check {
+    	bool found;
+    	enum target_action action;
+	};
+
+
+static uint8_t device_id;
 bool radio_params_hardcoded=0;
 
 
 
-static uint8_t lookup_device_id(const bt_addr_t *addr)
+uint8_t lookup_device_id(const bt_addr_t *addr)
 {
     for (size_t i = 0; i < ARRAY_SIZE(device_id_table); i++) {
         if (bt_addr_cmp(addr, &device_id_table[i].addr) == 0) {
@@ -106,10 +129,57 @@ void set_radio_params_init(void)
 	radio_params_hardcoded = 1;
 }
 
+static bool name_check_cb(struct bt_data *data, void *user_data)
+{
+    struct name_check *check = user_data;
+
+    if (data->type != BT_DATA_NAME_COMPLETE &&
+        data->type != BT_DATA_NAME_SHORTENED) {
+        return true;
+    }
+
+    for (size_t i = 0; i < ARRAY_SIZE(target_devices); i++) {
+        const char *target_name = target_devices[i].name;
+
+        if (data->data_len == strlen(target_name) &&
+            memcmp(data->data, target_name, data->data_len) == 0) {
+            check->found = true;
+            check->action = target_devices[i].action;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 		    struct net_buf_simple *buf)
 {
 	mfg_data[1]++;
+	struct net_buf_simple ad_temp;
+	struct name_check check = {
+		.action = ACTION_NONE,
+		.found = false,
+	};
+	net_buf_simple_clone(buf, &ad_temp);
+	bt_data_parse(&ad_temp, name_check_cb, &check);
+
+	if (check.found) {
+		printk("Found target device DSA\n");
+		switch (check.action) {
+		case ACTION_DSA:
+		case ACTION_DST:
+			network_evaluate_contact(addr, rssi, adv_type, buf);	
+			break;
+
+		case ACTION_DSZ:
+			/* action for Beacon_1 */
+			break;
+		default:
+			break;
+		}	
+	}
+    /* Do follow-up logic here, not inside name_check_cb */
 }
 
 void scan_init(void)

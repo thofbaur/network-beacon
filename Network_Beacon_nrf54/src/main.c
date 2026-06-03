@@ -14,7 +14,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 
 #include "radio.h"
-
+#include "network.h"
 
 int main(void)
 {
@@ -22,7 +22,7 @@ int main(void)
 
 
 	printk("Starting DSA Network Beacon\n");
-
+	network_init();
 	/* Initialize the Bluetooth Subsystem */
 	err = radio_init();
 	/* Start advertising and scanning*/
