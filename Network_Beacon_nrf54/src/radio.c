@@ -1,9 +1,12 @@
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gap.h>
+#include <zephyr/sys/util.h>
 //#include <bluetooth/scan.h>
 #include "radio_ids.h"
 #include "network.h"
 #include "radio.h"
+#include "nus.h"
 /* Radio Parameters
  *
  */
@@ -37,6 +40,7 @@
 static uint8_t mfg_data[] = { 0xff, 0x00, 0x00 };
 
 static const struct bt_data ad[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, strlen(CONFIG_BT_DEVICE_NAME)),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, mfg_data, sizeof(mfg_data)),
 };
@@ -204,7 +208,7 @@ void adv_init(void)
 	adv_params.id = 0U;
 	adv_params.sid = 0U;
 	adv_params.secondary_max_skip = 0U;
-	adv_params.options = BT_LE_ADV_OPT_USE_IDENTITY;
+	adv_params.options = BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_IDENTITY;
 	mfg_data[ADV_POS_ID] = get_device_id();
 }
 
@@ -253,16 +257,23 @@ int radio_init(void)
 	}
 
 	printk("Bluetooth initialized\n");
-    
-    return err;
+
+	err = nus_service_init();
+	if (err) {
+		return err;
+	}
+
+	printk("NUS initialized\n");
+	set_radio_params_init();
+	scan_init();
+	adv_init();
+	return err;
 }
 
 int radio_start(void)
 {
     int err;
-	set_radio_params_init();
-	scan_init();
-	adv_init();
+
 	set_ble_params(params_radio.mode);
 	/* Start advertising */
 	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad),
@@ -290,3 +301,20 @@ int radio_update(void)
 	err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
 	return err;
 }
+
+static void radio_disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	int err;
+
+	ARG_UNUSED(conn);
+	ARG_UNUSED(reason);
+
+	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad), NULL, 0);
+	if (err) {
+		printk("Advertising failed to restart (err %d)\n", err);
+	}
+}
+
+BT_CONN_CB_DEFINE(radio_conn_callbacks) = {
+	.disconnected = radio_disconnected,
+};
