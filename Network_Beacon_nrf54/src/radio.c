@@ -40,7 +40,7 @@
 static uint8_t mfg_data[] = { 0xff, 0x00, 0x00 };
 
 static const struct bt_data ad[] = {
-	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	//BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, strlen(CONFIG_BT_DEVICE_NAME)),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, mfg_data, sizeof(mfg_data)),
 };
@@ -185,6 +185,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 			break;
 		}	
 	}
+	radio_update();
     /* Do follow-up logic here, not inside name_check_cb */
 }
 
@@ -304,17 +305,26 @@ int radio_update(void)
 
 static void radio_disconnected(struct bt_conn *conn, uint8_t reason)
 {
+	ARG_UNUSED(conn);
+
+	printk("Connection disconnected, advertising restart waits for recycled callback (reason 0x%02x)\n",
+	       reason);
+}
+
+static void radio_recycled(void)
+{
 	int err;
 
-	ARG_UNUSED(conn);
-	ARG_UNUSED(reason);
-
+	printk("Connection object recycled, restarting advertising\n");
 	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
 		printk("Advertising failed to restart (err %d)\n", err);
+	} else {
+		printk("Advertising restarted\n");
 	}
 }
 
 BT_CONN_CB_DEFINE(radio_conn_callbacks) = {
 	.disconnected = radio_disconnected,
+	.recycled = radio_recycled,
 };

@@ -422,10 +422,12 @@ static bool is_valid_connector(  const ble_gap_evt_adv_report_t *p_adv_report)
 {
 	uint8_t *p_data = (uint8_t *)p_adv_report->data;
 //	uint8_t index;
+   // printf("Device found with name: %.*s \r\n", 3, (char *)&p_data[POS_NAME_START]);
 
 	if(	 ( p_data[POS_NAME_START] == identifier[0] && p_data[POS_NAME_START+1] == identifier[1] && p_data[POS_NAME_START+2] == identifier[2] ) && \
 			(  p_adv_report->rssi >-100 ))
 	{
+
 //		if(p_adv_report->dlen==9)
 //		{
 //			index = POS_INF_STATUS;

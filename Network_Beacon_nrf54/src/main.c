@@ -31,7 +31,7 @@ int main(void)
 
 	do {
 		k_sleep(K_MSEC(400));
-		radio_update();
+		//radio_update();
 		
 
 		
