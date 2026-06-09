@@ -1,9 +1,21 @@
+#include <errno.h>
+#include <string.h>
+
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/sys/printk.h>
+
+#include "defines.h"
+#include "network.h"
+#include "param_storage.h"
 #include "radio.h"
 
-struct  {
+#define NETWORK_PARAMS_STORAGE_KEY "dsa/network"
+
+struct network_params {
 	int8_t 		rssi_threshold;	
-} params_network;
+};
+
+static struct network_params params_network;
 
 typedef struct {
 	uint8_t     id;
@@ -39,10 +51,66 @@ static void contact_time_put(uint8_t time[3], uint32_t uptime_s)
 	time[2] = uptime_s & 0xff;
 }
 
+static void reset_parameters(void)
+{
+	params_network.rssi_threshold = NETWORK_LIMIT_RSSI;
+
+}
+
 
 void network_init(void)
 {
-    params_network.rssi_threshold = NETWORK_LIMIT_RSSI; // RSSI threshold for contact evaluation
+	int err;
+
+	reset_parameters();
+	err = network_params_load();
+	if (err == -ENOENT) {
+		printk("No stored network parameters, using defaults\n");
+	} else if (err) {
+		printk("Failed to load network parameters (err %d), using defaults\n", err);
+	}
+}
+
+void network_apply_command(uint8_t parameter, uint16_t value)
+{
+	struct network_params old_params_network = params_network;
+
+	switch (parameter) {
+	case P_RSSI_NETWORK:
+		params_network.rssi_threshold = -(int8_t)value;
+		printk("Network RSSI threshold set to %d dBm\n", params_network.rssi_threshold);
+		break;
+	case P_NETWORK_RESET_PARAMS:
+		reset_parameters();
+		printk("Network parameters reset\n");
+		break;
+	case P_TRACKING_ACTIVE:
+		printk("Network tracking command value %u not implemented\n", value);
+		break;
+	default:
+		printk("Unknown network parameter 0x%02x value %u\n", parameter, value);
+		break;
+	}
+
+	if (memcmp(&old_params_network, &params_network, sizeof(params_network)) != 0) {
+		int err = network_params_save();
+
+		if (err) {
+			printk("Failed to save network parameters (err %d)\n", err);
+		}
+	}
+}
+
+int network_params_load(void)
+{
+	return param_storage_load(NETWORK_PARAMS_STORAGE_KEY,
+				  &params_network, sizeof(params_network));
+}
+
+int network_params_save(void)
+{
+	return param_storage_save(NETWORK_PARAMS_STORAGE_KEY,
+				  &params_network, sizeof(params_network));
 }
 
 static bool scan_extract_id(struct bt_data *data, void *user_data)

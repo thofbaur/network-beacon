@@ -22,4 +22,11 @@ static const struct known_device known_device_table[] = {
         },
         .id = 104,
     },
+    {
+        .addr = {
+            .type = BT_ADDR_LE_RANDOM,
+            .a = { .val = { 0xFB, 0x3A, 0xE1, 0xE2, 0xD7, 0xCF } }  // altes nrf51422 dev kit
+        },
+        .id = 0,
+    },
 };

@@ -1,10 +1,16 @@
+#include <errno.h>
+#include <string.h>
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gap.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 //#include <bluetooth/scan.h>
+#include "defines.h"
 #include "radio_ids.h"
 #include "network.h"
+#include "param_storage.h"
 #include "radio.h"
 #include "nus.h"
 #include "device.h"
@@ -35,6 +41,8 @@
 #define HIGH_ACTIVITY				1
 #define LOW_ACTIVITY				0
 #define INITIAL_MODE				HIGH_ACTIVITY  //1 High Activity, 0 Low Activity
+#define COMMAND_TARGET_BROADCAST	0xff
+#define RADIO_PARAMS_STORAGE_KEY	"dsa/radio"
 
 
 
@@ -46,7 +54,7 @@ static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, mfg_data, sizeof(mfg_data)),
 };
 
-struct {
+struct radio_params {
 	uint16_t	adv_interval_min;
 	uint16_t	adv_interval_max;
 	uint16_t	adv_interval_min_lowactivity;
@@ -56,7 +64,9 @@ struct {
 	uint16_t	scan_window;
 	uint16_t	scan_window_lowactivity;
 	uint8_t		mode;
-} params_radio;
+};
+
+static struct radio_params params_radio;
 
 struct bt_le_scan_param scan_param;
 struct bt_le_adv_param adv_params;
@@ -85,6 +95,9 @@ struct name_check {
 
 
 bool radio_params_hardcoded=0;
+
+void set_ble_params(uint8_t mode);
+static void update_ble_params(void);
 
 
 
@@ -127,10 +140,163 @@ static bool name_check_cb(struct bt_data *data, void *user_data)
     return true;
 }
 
+static bool scan_extract_data(struct bt_data *data, void *user_data)
+{
+	struct net_buf_simple *buf = user_data;
+
+	if (data->type == BT_DATA_MANUFACTURER_DATA)
+	{
+		uint16_t copy_len = MIN(data->data_len, net_buf_simple_tailroom(buf));
+
+		net_buf_simple_add_mem(buf, data->data, copy_len);
+		if (copy_len < data->data_len) {
+			printk("Command data truncated from %u to %u bytes\n",
+			       data->data_len, copy_len);
+		}
+		return false; // Stop parsing further
+	}
+
+	return true; // Continue parsing other data fields    
+ 
+}
+
+static void radio_apply_command(uint8_t parameter, uint16_t value)
+{
+	struct radio_params old_params_radio = params_radio;
+
+	switch (parameter) {
+	case P_ADV_INTERVAL_MS:
+		params_radio.adv_interval_min = BT_GAP_MS_TO_ADV_INTERVAL(value);
+		params_radio.adv_interval_max = BT_GAP_MS_TO_ADV_INTERVAL(value);
+		break;
+	case P_ADV_INTERVAL_LOWACTIVITY_MS:
+		params_radio.adv_interval_min_lowactivity = BT_GAP_MS_TO_ADV_INTERVAL(value);
+		params_radio.adv_interval_max_lowactivity = BT_GAP_MS_TO_ADV_INTERVAL(value);
+		break;
+	case P_SCAN_INTERVAL_MS:
+		params_radio.scan_interval = BT_GAP_MS_TO_SCAN_INTERVAL(value);
+		break;
+	case P_SCAN_INTERVAL_LOWACTIVITY_MS:
+		params_radio.scan_interval_lowactivity = BT_GAP_MS_TO_SCAN_INTERVAL(value);
+		break;
+	case P_SCAN_WINDOW_MS:
+		params_radio.scan_window = BT_GAP_MS_TO_SCAN_WINDOW(value);
+		break;
+	case P_SCAN_WINDOW_LOWACTIVITY_MS:
+		params_radio.scan_window_lowactivity = BT_GAP_MS_TO_SCAN_WINDOW(value);
+		break;
+	case P_RADIO_RESET_PARAMS:
+		set_radio_params_init();
+		break;
+	case P_SET_RAD_ACTIVE:
+		params_radio.mode = value ? HIGH_ACTIVITY : LOW_ACTIVITY;
+		break;
+	default:
+		printk("Unknown radio parameter 0x%02x value %u\n", parameter, value);
+		break;
+	}
+
+	if (memcmp(&old_params_radio, &params_radio, sizeof(params_radio)) != 0) {
+		int err = radio_params_save();
+
+		if (err) {
+			printk("Failed to save radio parameters (err %d)\n", err);
+		}
+		set_ble_params(params_radio.mode);
+		update_ble_params();
+	}
+}
+
+int radio_params_load(void)
+{
+	return param_storage_load(RADIO_PARAMS_STORAGE_KEY,
+				  &params_radio, sizeof(params_radio));
+}
+
+int radio_params_save(void)
+{
+	return param_storage_save(RADIO_PARAMS_STORAGE_KEY,
+				  &params_radio, sizeof(params_radio));
+}
+
+static void main_apply_command(uint8_t parameter, uint16_t value)
+{
+	switch (parameter) {
+	case P_MAIN_LED_ACTIVE:
+		printk("Main LED command value %u not implemented\n", value);
+		break;
+	case P_MAIN_RESET_PARAMS:
+		printk("Main parameter reset command not implemented\n");
+		break;
+	default:
+		printk("Unknown main parameter 0x%02x value %u\n", parameter, value);
+		break;
+	}
+}
+
+static void evaluate_command_data(const uint8_t *data, uint8_t len)
+{
+	for (uint8_t offset = 0; offset + 2 < len; offset += 3) {
+		uint8_t parameter = data[offset];
+		uint16_t value = sys_get_be16(&data[offset + 1]);
+
+		printk("Command parameter 0x%02x value %u\n", parameter, value);
+
+		switch (parameter & P_BASE_MASK) {
+		case P_BASE_MAIN:
+			main_apply_command(parameter, value);
+			break;
+		case P_BASE_NETWORK:
+			network_apply_command(parameter, value);
+			break;
+		case P_BASE_RADIO:
+			radio_apply_command(parameter, value);
+			break;
+		default:
+			printk("Unknown parameter base 0x%02x for parameter 0x%02x\n",
+			       parameter & P_BASE_MASK, parameter);
+			break;
+		}
+	}
+
+	if ((len % 3) != 0) {
+		printk("Ignoring %u incomplete command byte(s)\n", len % 3);
+	}
+}
+
+void radio_evaluate_command(struct net_buf_simple *buf)
+{
+	uint8_t target;
+	uint8_t command_data[31];
+	struct net_buf_simple ad_temp;
+	struct net_buf_simple command_buf = {
+		.data = command_data,
+		.len = 0,
+		.size = sizeof(command_data),
+		.__buf = command_data,
+	};
+
+	net_buf_simple_clone(buf, &ad_temp);
+	bt_data_parse(&ad_temp, scan_extract_data, &command_buf);
+
+	if (command_buf.len < 1) {
+		printk("Command data missing target byte\n");
+		return;
+	}
+
+	target = command_buf.data[0];
+	if (target != mfg_data[ADV_POS_ID] && target != COMMAND_TARGET_BROADCAST) {
+		printk("Ignoring command for target 0x%02x, own id 0x%02x\n",
+		       target, mfg_data[ADV_POS_ID]);
+		return;
+	}
+
+	evaluate_command_data(&command_buf.data[1], command_buf.len - 1);
+}
+
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 		    struct net_buf_simple *buf)
 {
-	mfg_data[1]++;
 	struct net_buf_simple ad_temp;
 	struct name_check check = {
 		.action = ACTION_NONE,
@@ -148,14 +314,38 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 			break;
 
 		case ACTION_DSZ:
-			/* action for Beacon_1 */
+			radio_evaluate_command(buf); 
 			break;
 		default:
 			break;
 		}	
 	}
-	radio_update();
     /* Do follow-up logic here, not inside name_check_cb */
+}
+
+static void update_ble_params(void)
+{
+	int err;
+
+	err = bt_le_adv_stop();
+	if (err && err != -EALREADY) {
+		printk("Advertising stop before parameter update failed (err %d)\n", err);
+	}
+
+	err = bt_le_scan_stop();
+	if (err && err != -EALREADY) {
+		printk("Scan stop before parameter update failed (err %d)\n", err);
+	}
+
+	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad), NULL, 0);
+	if (err && err != -EALREADY) {
+		printk("Advertising parameter update failed (err %d)\n", err);
+	}
+
+	err = bt_le_scan_start(&scan_param, scan_cb);
+	if (err && err != -EALREADY) {
+		printk("Scan parameter update failed (err %d)\n", err);
+	}
 }
 
 void scan_init(void)
@@ -219,6 +409,7 @@ void set_ble_params(uint8_t mode)
 int radio_init(void)
 {
   	int err;
+	int load_err;
 
     err = bt_enable(NULL);
 	if (err) {
@@ -235,6 +426,12 @@ int radio_init(void)
 
 	printk("NUS initialized\n");
 	set_radio_params_init();
+	load_err = radio_params_load();
+	if (load_err == -ENOENT) {
+		printk("No stored radio parameters, using defaults\n");
+	} else if (load_err) {
+		printk("Failed to load radio parameters (err %d), using defaults\n", load_err);
+	}
 	scan_init();
 	adv_init();
 	return err;
@@ -263,14 +460,6 @@ int radio_start(void)
     return err;
 }
 
-
-int radio_update(void)
-{
-	int err;
-
-	err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
-	return err;
-}
 
 static void radio_disconnected(struct bt_conn *conn, uint8_t reason)
 {
