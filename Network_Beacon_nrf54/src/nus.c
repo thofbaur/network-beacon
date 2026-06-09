@@ -8,12 +8,16 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <bluetooth/services/nus.h>
 
 #include "nus.h"
+#include "defines.h"
+#include "network.h"
 
-#define NUS_CONNECTION_TIMEOUT_MS 2000
+#define NUS_CONNECTION_TIMEOUT_MS 20000
+#define NUS_ATT_NOTIFY_HEADER_LEN 3
 
 static struct bt_conn *current_conn;
 static bool nus_notifications_enabled;
@@ -149,27 +153,71 @@ static void request_throughput_params(struct bt_conn *conn)
 
 static void send_uptime(struct bt_conn *conn)
 {
-	char response[32];
-	uint32_t uptime_s;
-	int len;
+	uint8_t buffer[1 + sizeof(uint32_t)];
 
-	uptime_s = (uint32_t)k_uptime_seconds();
-	len = snprintf(response, sizeof(response), "%u\r\n", uptime_s);
-	if (len < 0 || len >= sizeof(response)) {
-		return;
-	}
+	buffer[0] = DSA_NUS_FLAG_TIME;
+	sys_put_be32((uint32_t)k_uptime_seconds(), &buffer[1]);
 
-	if (bt_nus_send(conn, response, len)) {
+	if (bt_nus_send(conn, buffer, sizeof(buffer))) {
 		printk("Failed to send NUS uptime response\n");
 	}
 }
+
+static void send_networkdata(struct bt_conn *conn)
+{
+	uint16_t max_payload = bt_gatt_get_mtu(conn);
+	uint8_t bytes_written = 0;
+	uint16_t contact_payload_len;
+	
+	if (max_payload > NUS_ATT_NOTIFY_HEADER_LEN) {
+		max_payload -= NUS_ATT_NOTIFY_HEADER_LEN;
+	} else {
+		max_payload = 0;
+	}
+
+	printk("NUS max payload: %u bytes\n", max_payload);
+
+	if (max_payload <= 1) {
+		return;
+	}
+
+	uint8_t buffer[max_payload];
+	contact_payload_len = max_payload - 1;
+	buffer[0] = DSA_NUS_FLAG_DATA;
+
+	do {
+		bytes_written = network_read_contact(&buffer[1], contact_payload_len);
+		if (bytes_written > 0 && bt_nus_send(conn, buffer, bytes_written + 1)) {
+			printk("Failed to send NUS network data\n");
+			return;
+		}
+	} while (bytes_written > 0);
+}
+
 
 static void nus_received(struct bt_conn *conn, const uint8_t *const data, uint16_t len)
 {
 	refresh_connection_timeout();
 
+	printk("NUS RX len=%u first=%02x %02x %02x %02x\n", len,
+	       len > 0 ? data[0] : 0,
+	       len > 1 ? data[1] : 0,
+	       len > 2 ? data[2] : 0,
+	       len > 3 ? data[3] : 0);
+
 	if (len == 2 && memcmp(data, "st", 2) == 0) {
+		printk("Starting sending data\n");
 		send_uptime(conn);
+		printk("Sent time\n");
+		send_networkdata(conn);
+
+		if (bt_nus_send(conn, "finished", strlen("finished"))) {
+			printk("Failed to send NUS finished response\n");
+		} 
+		/*else if (bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN)) {
+			printk("Failed to disconnect NUS connection\n");
+		}*/
+
 	}
 }
 

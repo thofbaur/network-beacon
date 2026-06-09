@@ -7,12 +7,14 @@ struct  {
 
 typedef struct {
 	uint8_t     id;
-	int32_t    time;
-	int8_t     rssi;
+	uint8_t     time[3];
+	uint8_t     rssi;  // negative value, e.g., -80 dBm is stored as 80
 } contact_entry;
+#define CONTACT_ENTRY_SIZE 5
 
-static uint16_t idx_read = 0;
-static uint16_t idx_write = 0;
+
+
+
 
 #define LENGTH_DATA_BUFFER 10
 
@@ -27,7 +29,15 @@ static uint16_t idx_write = 0;
 #define DATA_LEVEL_7	2000
 
 #define P_SHIFT_STATUS_DATA 5
-static contact_entry	data_array[LENGTH_DATA_BUFFER]; //ID 1 Byte; Ctr Start 4 Byte, RRSI 1 Byte
+static contact_entry	data_array[LENGTH_DATA_BUFFER]; // ID 1 Byte; time 3 Byte; RSSI 1 Byte
+static uint16_t idx_read = 0;
+static uint16_t idx_write = 0;
+static void contact_time_put(uint8_t time[3], uint32_t uptime_s)
+{
+	time[0] = (uptime_s >> 16) & 0xff;
+	time[1] = (uptime_s >> 8) & 0xff;
+	time[2] = uptime_s & 0xff;
+}
 
 
 void network_init(void)
@@ -107,9 +117,38 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
         
         net_buf_simple_clone(buf, &ad_temp);
 	    bt_data_parse(&ad_temp, scan_extract_id, &id);
-        data_array[idx_write] = (contact_entry){.id = id, .time = (int32_t)k_uptime_seconds(), .rssi = rssi};
+		
+		data_array[idx_write].id = id;
+		contact_time_put(data_array[idx_write].time, (uint32_t)k_uptime_seconds());
+		data_array[idx_write].rssi = -rssi;
         idx_write = (idx_write + 1) % LENGTH_DATA_BUFFER;
         network_update_tag();
     }
+}
+
+uint8_t network_read_contact(uint8_t *buffer, uint16_t buffer_len)
+{
+	uint8_t bytes_written = 0;
+	
+	while (idx_read != idx_write)
+	{
+		if ((buffer_len - bytes_written) < CONTACT_ENTRY_SIZE) {
+			break;
+		}
+
+		buffer[bytes_written++] = data_array[idx_read].id;
+		buffer[bytes_written++] = data_array[idx_read].time[0];
+		buffer[bytes_written++] = data_array[idx_read].time[1];
+		buffer[bytes_written++] = data_array[idx_read].time[2];
+		buffer[bytes_written++] = data_array[idx_read].rssi;
+
+		idx_read = (idx_read + 1) % LENGTH_DATA_BUFFER;
+	}
+
+	if (bytes_written > 0) {
+		network_update_tag();
+	}
+	
+	return bytes_written;
 }
 
