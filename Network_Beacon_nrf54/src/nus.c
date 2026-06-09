@@ -7,6 +7,7 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/byteorder.h>
 
@@ -21,11 +22,33 @@
 
 static struct bt_conn *current_conn;
 static bool nus_notifications_enabled;
+static bool disconnect_when_sent;
+static atomic_t pending_nus_sends;
 static struct bt_gatt_exchange_params mtu_exchange_params;
 
 static void connection_timeout_handler(struct k_work *work);
 
 static K_WORK_DELAYABLE_DEFINE(connection_timeout_work, connection_timeout_handler);
+
+static int nus_send_tracked(struct bt_conn *conn, const void *data, uint16_t len)
+{
+	int err;
+
+	atomic_inc(&pending_nus_sends);
+	err = bt_nus_send(conn, data, len);
+	if (err) {
+		atomic_dec(&pending_nus_sends);
+	}
+
+	return err;
+}
+
+static void disconnect_nus_connection(struct bt_conn *conn)
+{
+	if (bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN)) {
+		printk("Failed to disconnect NUS connection\n");
+	}
+}
 
 static void refresh_connection_timeout(void)
 {
@@ -158,7 +181,7 @@ static void send_uptime(struct bt_conn *conn)
 	buffer[0] = DSA_NUS_FLAG_TIME;
 	sys_put_be32((uint32_t)k_uptime_seconds(), &buffer[1]);
 
-	if (bt_nus_send(conn, buffer, sizeof(buffer))) {
+	if (nus_send_tracked(conn, buffer, sizeof(buffer))) {
 		printk("Failed to send NUS uptime response\n");
 	}
 }
@@ -187,7 +210,7 @@ static void send_networkdata(struct bt_conn *conn)
 
 	do {
 		bytes_written = network_read_contact(&buffer[1], contact_payload_len);
-		if (bytes_written > 0 && bt_nus_send(conn, buffer, bytes_written + 1)) {
+		if (bytes_written > 0 && nus_send_tracked(conn, buffer, bytes_written + 1)) {
 			printk("Failed to send NUS network data\n");
 			return;
 		}
@@ -211,13 +234,24 @@ static void nus_received(struct bt_conn *conn, const uint8_t *const data, uint16
 		printk("Sent time\n");
 		send_networkdata(conn);
 
-		if (bt_nus_send(conn, "finished", strlen("finished"))) {
+		if (nus_send_tracked(conn, "finished", strlen("finished"))) {
 			printk("Failed to send NUS finished response\n");
-		} 
-		/*else if (bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN)) {
-			printk("Failed to disconnect NUS connection\n");
-		}*/
+		} else {
+			disconnect_when_sent = true;
+		}
 
+	}
+}
+
+static void nus_sent(struct bt_conn *conn)
+{
+	if (atomic_get(&pending_nus_sends) > 0) {
+		atomic_dec(&pending_nus_sends);
+	}
+
+	if (disconnect_when_sent && atomic_get(&pending_nus_sends) == 0) {
+		disconnect_when_sent = false;
+		disconnect_nus_connection(conn);
 	}
 }
 
@@ -229,6 +263,7 @@ static void nus_send_enabled(enum bt_nus_send_status status)
 
 static struct bt_nus_cb nus_cb = {
 	.received = nus_received,
+	.sent = nus_sent,
 	.send_enabled = nus_send_enabled,
 };
 
@@ -271,6 +306,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	cancel_connection_timeout();
 	nus_notifications_enabled = false;
+	disconnect_when_sent = false;
+	atomic_set(&pending_nus_sends, 0);
 }
 
 static void le_param_updated(struct bt_conn *conn, uint16_t interval,
