@@ -1,6 +1,12 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <stdint.h>
+
+#include <zephyr/bluetooth/addr.h>
+
+struct net_buf_simple;
+
 void network_evaluate_contact(const bt_addr_le_t *addr, 
     int8_t rssi, uint8_t adv_type, struct net_buf_simple *buf);
 void network_init(void);
