@@ -46,6 +46,7 @@
 #define COMMAND_DATA_MAX_LEN		31
 #define COMMAND_QUEUE_DEPTH		4
 #define RADIO_PARAMS_STORAGE_KEY	"dsa/radio"
+#define RADIO_STATUS_SCAN_ERROR	BIT(0)
 
 
 
@@ -102,6 +103,7 @@ struct command_msg {
 };
 
 static void command_work_handler(struct k_work *work);
+static void radio_status_set(uint8_t mask, bool active);
 
 K_MSGQ_DEFINE(command_msgq, sizeof(struct command_msg), COMMAND_QUEUE_DEPTH, 1);
 static K_WORK_DEFINE(command_work, command_work_handler);
@@ -109,7 +111,8 @@ static K_WORK_DEFINE(command_work, command_work_handler);
 bool radio_params_hardcoded=0;
 
 void set_ble_params(struct radio_params *params);
-static void update_ble_params(struct bt_le_scan_param *scan_params, struct bt_le_adv_param *adv_params);
+static int update_ble_params(struct bt_le_scan_param *scan_params, struct bt_le_adv_param *adv_params);
+static int radio_params_validate(const struct radio_params *params);
 
 
 
@@ -172,6 +175,7 @@ static bool scan_extract_data(struct bt_data *data, void *user_data)
 
 static void radio_apply_command(uint8_t parameter, uint16_t value)
 {
+	int err;
 	struct radio_params old_params_radio = params_radio;
 
 	switch (parameter) {
@@ -207,13 +211,27 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 	}
 
 	if (memcmp(&old_params_radio, &params_radio, sizeof(params_radio)) != 0) {
-		int err = radio_params_save();
+		err = radio_params_validate(&params_radio);
+		if (err) {
+			printk("Rejecting invalid radio parameters (err %d)\n", err);
+			params_radio = old_params_radio;
+			return;
+		}
 
+		set_ble_params(&params_radio);
+		err = update_ble_params(&scan_params, &adv_params);
+		if (err) {
+			printk("Failed to apply radio parameters (err %d), restoring old values\n", err);
+			params_radio = old_params_radio;
+			set_ble_params(&params_radio);
+			update_ble_params(&scan_params, &adv_params);
+			return;
+		}
+
+		err = radio_params_save();
 		if (err) {
 			printk("Failed to save radio parameters (err %d)\n", err);
 		}
-		set_ble_params(&params_radio);
-		update_ble_params(&scan_params, &adv_params);
 	}
 }
 
@@ -360,29 +378,76 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     /* Do follow-up logic here, not inside name_check_cb */
 }
 
-static void update_ble_params(struct bt_le_scan_param *parameters_scan, struct bt_le_adv_param *parameters_adv)
+static int radio_params_validate(const struct radio_params *params)
+{
+	// TODO: Add validation for parameter ranges if needed
+	if (params->mode != HIGH_ACTIVITY && params->mode != LOW_ACTIVITY) {
+		return -EINVAL;
+	}
+
+	if (params->adv_interval_min == 0 ||
+	    params->adv_interval_max == 0 ||
+	    params->adv_interval_min_lowactivity == 0 ||
+	    params->adv_interval_max_lowactivity == 0 ||
+	    params->scan_interval == 0 ||
+	    params->scan_interval_lowactivity == 0 ||
+	    params->scan_window == 0 ||
+	    params->scan_window_lowactivity == 0) {
+		return -EINVAL;
+	}
+
+	if (params->adv_interval_min > params->adv_interval_max ||
+	    params->adv_interval_min_lowactivity > params->adv_interval_max_lowactivity) {
+		return -EINVAL;
+	}
+
+	if (params->scan_window > params->scan_interval ||
+	    params->scan_window_lowactivity > params->scan_interval_lowactivity) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int update_ble_params(struct bt_le_scan_param *parameters_scan, struct bt_le_adv_param *parameters_adv)
 {
 	int err;
+	int first_err = 0;
 
 	err = bt_le_adv_stop();
 	if (err && err != -EALREADY) {
 		printk("Advertising stop before parameter update failed (err %d)\n", err);
+		first_err = err;
 	}
 
 	err = bt_le_scan_stop();
 	if (err && err != -EALREADY) {
 		printk("Scan stop before parameter update failed (err %d)\n", err);
+		if (!first_err) {
+			first_err = err;
+		}
 	}
 
 	err = bt_le_adv_start(parameters_adv, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err && err != -EALREADY) {
 		printk("Advertising parameter update failed (err %d)\n", err);
+		if (!first_err) {
+			first_err = err;
+		}
 	}
 
 	err = bt_le_scan_start(parameters_scan, scan_cb);
 	if (err && err != -EALREADY) {
 		printk("Scan parameter update failed (err %d)\n", err);
+		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
+		if (!first_err) {
+			first_err = err;
+		}
+	} else {
+		radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
 	}
+
+	return first_err;
 }
 
 void scan_init(void)
@@ -411,11 +476,29 @@ void adv_init(void)
 
 void adv_update(uint8_t position, uint8_t value)
 {
+	int err;
+
 	if (position < sizeof(mfg_data)) {
 		mfg_data[position] = value;
 	}
-	//
-	bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+
+	err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+	if (err) {
+		printk("Advertising data update failed (err %d)\n", err);
+	}
+}
+
+static void radio_status_set(uint8_t mask, bool active)
+{
+	uint8_t status = mfg_data[ADV_POS_RADIO_STATUS];
+
+	if (active) {
+		status |= mask;
+	} else {
+		status &= ~mask;
+	}
+
+	adv_update(ADV_POS_RADIO_STATUS, status);
 }
 
 void set_ble_params(struct radio_params *params)
@@ -491,9 +574,11 @@ int radio_start(void)
 	err = bt_le_scan_start(&scan_params, scan_cb);
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
-		
+		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
 		return err;
 	}
+
+	radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
     
     return 0;
 }
