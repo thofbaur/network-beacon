@@ -10,6 +10,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/util.h>
 
 #include <bluetooth/services/nus.h>
 
@@ -20,6 +21,7 @@
 #define NUS_CONNECTION_TIMEOUT_MS 20000
 #define NUS_ATT_NOTIFY_HEADER_LEN 3
 #define NUS_MAX_PAYLOAD_LEN 244
+#define NUS_PENDING_SEND_DEPTH 16
 
 static struct bt_conn *current_conn;
 static bool nus_notifications_enabled;
@@ -27,21 +29,116 @@ static bool disconnect_when_sent;
 static atomic_t pending_nus_sends;
 static struct bt_gatt_exchange_params mtu_exchange_params;
 
+struct pending_nus_send {
+	bool is_contact_data;
+	uint8_t contact_len;
+	uint8_t contact_data[NUS_MAX_PAYLOAD_LEN - 1];
+};
+
+static struct pending_nus_send pending_sends[NUS_PENDING_SEND_DEPTH];
+static uint8_t pending_send_head;
+static uint8_t pending_send_count;
+static K_MUTEX_DEFINE(pending_send_lock);
+
 static void connection_timeout_handler(struct k_work *work);
 
 static K_WORK_DELAYABLE_DEFINE(connection_timeout_work, connection_timeout_handler);
 
-static int nus_send_tracked(struct bt_conn *conn, const void *data, uint16_t len)
+static bool pending_send_full(void)
 {
-	int err;
+	bool full;
 
-	atomic_inc(&pending_nus_sends);
-	err = bt_nus_send(conn, data, len);
-	if (err) {
-		atomic_dec(&pending_nus_sends);
+	k_mutex_lock(&pending_send_lock, K_FOREVER);
+	full = pending_send_count == ARRAY_SIZE(pending_sends);
+	k_mutex_unlock(&pending_send_lock);
+
+	return full;
+}
+
+static void pending_send_push(bool is_contact_data, const uint8_t *contact_data,
+			      uint8_t contact_len)
+{
+	uint8_t index;
+
+	k_mutex_lock(&pending_send_lock, K_FOREVER);
+
+	index = (pending_send_head + pending_send_count) % ARRAY_SIZE(pending_sends);
+	pending_sends[index].is_contact_data = is_contact_data;
+	pending_sends[index].contact_len = contact_len;
+	if (is_contact_data && contact_len > 0) {
+		memcpy(pending_sends[index].contact_data, contact_data, contact_len);
+	}
+	pending_send_count++;
+
+	k_mutex_unlock(&pending_send_lock);
+}
+
+static bool pending_send_pop(struct pending_nus_send *send)
+{
+	bool found = false;
+
+	k_mutex_lock(&pending_send_lock, K_FOREVER);
+
+	if (pending_send_count > 0) {
+		*send = pending_sends[pending_send_head];
+		pending_send_head = (pending_send_head + 1) % ARRAY_SIZE(pending_sends);
+		pending_send_count--;
+		found = true;
 	}
 
-	return err;
+	k_mutex_unlock(&pending_send_lock);
+
+	return found;
+}
+
+static void pending_send_restore_contacts(void)
+{
+	uint8_t count;
+	uint8_t index;
+	struct pending_nus_send send;
+
+	k_mutex_lock(&pending_send_lock, K_FOREVER);
+	count = pending_send_count;
+	k_mutex_unlock(&pending_send_lock);
+
+	while (count > 0) {
+		k_mutex_lock(&pending_send_lock, K_FOREVER);
+		index = (pending_send_head + count - 1) % ARRAY_SIZE(pending_sends);
+		send = pending_sends[index];
+		k_mutex_unlock(&pending_send_lock);
+
+		if (send.is_contact_data && send.contact_len > 0) {
+			network_restore_contact(send.contact_data, send.contact_len);
+		}
+
+		count--;
+	}
+
+	k_mutex_lock(&pending_send_lock, K_FOREVER);
+	pending_send_head = 0;
+	pending_send_count = 0;
+	k_mutex_unlock(&pending_send_lock);
+}
+
+static int nus_send_tracked(struct bt_conn *conn, const void *data, uint16_t len,
+			    const uint8_t *contact_data, uint8_t contact_len)
+{
+	int err;
+	bool is_contact_data = contact_data != NULL && contact_len > 0;
+
+	if (pending_send_full()) {
+		return -ENOMEM;
+	}
+
+	err = bt_nus_send(conn, data, len);
+	if (err) {
+		return err;
+	}
+
+	pending_send_push(is_contact_data, contact_data, contact_len);
+	atomic_inc(&pending_nus_sends);
+
+	return 0;
 }
 
 static void disconnect_nus_connection(struct bt_conn *conn)
@@ -182,7 +279,7 @@ static void send_uptime(struct bt_conn *conn)
 	buffer[0] = DSA_NUS_FLAG_TIME;
 	sys_put_be32((uint32_t)k_uptime_seconds(), &buffer[1]);
 
-	if (nus_send_tracked(conn, buffer, sizeof(buffer))) {
+	if (nus_send_tracked(conn, buffer, sizeof(buffer), NULL, 0)) {
 		printk("Failed to send NUS uptime response\n");
 	}
 }
@@ -214,7 +311,8 @@ static void send_networkdata(struct bt_conn *conn)
 	do {
 		bytes_written = network_read_contact(&buffer[1], contact_payload_len);
 		if (bytes_written > 0) {
-			if (nus_send_tracked(conn, buffer, bytes_written + 1)) {
+			if (nus_send_tracked(conn, buffer, bytes_written + 1,
+					     &buffer[1], bytes_written)) {
 				printk("Failed to send NUS network data\n");
 				network_restore_contact(&buffer[1], bytes_written);
 				return;
@@ -240,7 +338,7 @@ static void nus_received(struct bt_conn *conn, const uint8_t *const data, uint16
 		printk("Sent time\n");
 		send_networkdata(conn);
 
-		if (nus_send_tracked(conn, "finished", strlen("finished"))) {
+		if (nus_send_tracked(conn, "finished", strlen("finished"), NULL, 0)) {
 			printk("Failed to send NUS finished response\n");
 		} else {
 			disconnect_when_sent = true;
@@ -251,6 +349,13 @@ static void nus_received(struct bt_conn *conn, const uint8_t *const data, uint16
 
 static void nus_sent(struct bt_conn *conn)
 {
+	struct pending_nus_send send;
+
+	if (!pending_send_pop(&send)) {
+		printk("NUS sent callback without pending send\n");
+		return;
+	}
+
 	if (atomic_get(&pending_nus_sends) > 0) {
 		atomic_dec(&pending_nus_sends);
 	}
@@ -311,6 +416,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	}
 
 	cancel_connection_timeout();
+	pending_send_restore_contacts();
 	nus_notifications_enabled = false;
 	disconnect_when_sent = false;
 	atomic_set(&pending_nus_sends, 0);
