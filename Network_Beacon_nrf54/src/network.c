@@ -14,7 +14,7 @@
 #define NETWORK_PARAMS_STORAGE_KEY "dsa/network"
 
 struct network_params {
-	int8_t 		rssi_threshold;	
+	uint8_t 	rssi_threshold;	
 };
 
 static struct network_params params_network;
@@ -32,7 +32,7 @@ typedef struct {
 
 #define LENGTH_DATA_BUFFER 10
 
-#define NETWORK_LIMIT_RSSI		-80 // approx. 1-2m distance
+#define NETWORK_LIMIT_RSSI		80 // approx. 1-2m distance
 
 #define DATA_LEVEL_1	0
 #define DATA_LEVEL_2	1
@@ -103,8 +103,12 @@ void network_apply_command(uint8_t parameter, uint16_t value)
 
 	switch (parameter) {
 	case P_RSSI_NETWORK:
-		params_network.rssi_threshold = -(int8_t)value;
-		printk("Network RSSI threshold set to %d dBm\n", params_network.rssi_threshold);
+		if (value > UINT8_MAX) {
+			printk("Rejecting invalid RSSI threshold value %u\n", value);
+			return;
+		}
+		params_network.rssi_threshold = (uint8_t)value;
+		printk("Network RSSI threshold set to -%u dBm\n", params_network.rssi_threshold);
 		break;
 	case P_NETWORK_RESET_PARAMS:
 		reset_parameters();
@@ -201,7 +205,9 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
 {
     struct net_buf_simple ad_temp;
     uint8_t id = 0;
-    if (rssi >= params_network.rssi_threshold) 
+    uint8_t rssi_magnitude = rssi < 0 ? (uint8_t)(-(int16_t)rssi) : 0;
+
+    if (rssi_magnitude <= params_network.rssi_threshold)
     {
         
         net_buf_simple_clone(buf, &ad_temp);
@@ -210,7 +216,7 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
 		k_mutex_lock(&contact_lock, K_FOREVER);
 		data_array[idx_write].id = id;
 		contact_time_put(data_array[idx_write].time, (uint32_t)k_uptime_seconds());
-		data_array[idx_write].rssi = -rssi;
+		data_array[idx_write].rssi = rssi_magnitude;
 		idx_write = (idx_write + 1) % LENGTH_DATA_BUFFER;
 
 		if (contact_count == LENGTH_DATA_BUFFER) {
