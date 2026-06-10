@@ -480,17 +480,20 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 
 static int scan_init(void)
 {
-    int err;
+	int err;
+	int failed_entries = 0;
 
-
-	for (size_t i = 0; i < ARRAY_SIZE(known_device_table); i++) 
-	{
-    	err = bt_le_filter_accept_list_add(&known_device_table[i].addr);
+	for (size_t i = 0; i < ARRAY_SIZE(known_device_table); i++) {
+		err = bt_le_filter_accept_list_add(&known_device_table[i].addr);
 		if (err) {
-    	    printk("Failed to add to filter list (err %d)\n", err);
-			return err;
-    }
+			printk("Failed to add device %u to filter list (err %d)\n", i, err);
+			failed_entries++;
 		}
+	}
+
+	if (failed_entries == ARRAY_SIZE(known_device_table)) {
+		return -ENODEV;
+	}
 
 	return 0;
 }
