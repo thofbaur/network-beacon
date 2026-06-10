@@ -56,27 +56,6 @@ static void contact_time_put(uint8_t time[3], uint32_t uptime_s)
 	time[2] = uptime_s & 0xff;
 }
 
-static void contact_entry_from_buffer(contact_entry *entry, const uint8_t *buffer)
-{
-	entry->id = buffer[0];
-	entry->time[0] = buffer[1];
-	entry->time[1] = buffer[2];
-	entry->time[2] = buffer[3];
-	entry->rssi = buffer[4];
-}
-
-static void contact_restore_front(const uint8_t *buffer)
-{
-	if (contact_count == LENGTH_DATA_BUFFER) {
-		idx_write = (idx_write + LENGTH_DATA_BUFFER - 1) % LENGTH_DATA_BUFFER;
-		contact_count--;
-	}
-
-	idx_read = (idx_read + LENGTH_DATA_BUFFER - 1) % LENGTH_DATA_BUFFER;
-	contact_entry_from_buffer(&data_array[idx_read], buffer);
-	contact_count++;
-}
-
 static void reset_parameters(void)
 {
 	params_network.rssi_threshold = NETWORK_LIMIT_RSSI;
@@ -205,7 +184,7 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
 {
     struct net_buf_simple ad_temp;
     uint8_t id = 0;
-    uint8_t rssi_magnitude = rssi < 0 ? (uint8_t)(-(int16_t)rssi) : 0;
+    uint8_t rssi_magnitude = (uint8_t)(-(int16_t)rssi);
 
     if (rssi_magnitude <= params_network.rssi_threshold)
     {
@@ -261,24 +240,4 @@ uint8_t network_read_contact(uint8_t *buffer, uint16_t buffer_len)
 	}
 
 	return bytes_written;
-}
-
-void network_restore_contact(const uint8_t *buffer, uint8_t bytes_read)
-{
-	uint8_t entries_read = bytes_read / CONTACT_ENTRY_SIZE;
-
-	if (entries_read == 0) {
-		return;
-	}
-
-	k_mutex_lock(&contact_lock, K_FOREVER);
-
-	while (entries_read > 0) {
-		entries_read--;
-		contact_restore_front(&buffer[entries_read * CONTACT_ENTRY_SIZE]);
-	}
-
-	k_mutex_unlock(&contact_lock);
-
-	network_update_tag();
 }

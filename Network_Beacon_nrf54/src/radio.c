@@ -120,8 +120,6 @@ bool radio_params_hardcoded=0;
 void set_ble_params(struct radio_params *params);
 static uint8_t update_ble_params(struct bt_le_scan_param *scan_params, struct bt_le_adv_param *adv_params);
 static int radio_params_validate(const struct radio_params *params);
-static void restore_adv_params(struct radio_params *params, const struct radio_params *old_params);
-static void restore_scan_params(struct radio_params *params, const struct radio_params *old_params);
 static int scan_init(void);
 
 
@@ -232,26 +230,18 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 		set_ble_params(&params_radio);
 		update_errors = update_ble_params(&scan_params, &adv_params);
 		if (update_errors & (BLE_UPDATE_ADV_ERROR | BLE_UPDATE_SCAN_ERROR)) {
-			printk("Radio parameter update had error flags 0x%02x, restoring failed parts\n",
+			printk("Radio parameter update had error flags 0x%02x, restoring old parameters\n",
 			       update_errors);
 
-			if (update_errors & BLE_UPDATE_ADV_ERROR) {
-				restore_adv_params(&params_radio, &old_params_radio);
-			}
-			if (update_errors & BLE_UPDATE_SCAN_ERROR) {
-				restore_scan_params(&params_radio, &old_params_radio);
-			}
-			params_radio.mode = old_params_radio.mode;
-
+			params_radio = old_params_radio;
 			set_ble_params(&params_radio);
 			update_errors = update_ble_params(&scan_params, &adv_params);
 			if (update_errors & BLE_UPDATE_ADV_ERROR) {
 				printk("Failed to restore advertising parameters, not saving radio parameters\n");
-				params_radio = old_params_radio;
-				set_ble_params(&params_radio);
-				update_ble_params(&scan_params, &adv_params);
-				return;
+			} else if (update_errors & BLE_UPDATE_SCAN_ERROR) {
+				printk("Failed to restore scan parameters, not saving radio parameters\n");
 			}
+			return;
 		}
 		if (update_errors & BLE_UPDATE_STATUS_ERROR) {
 			printk("Radio status advertising data update failed, keeping accepted parameters\n");
@@ -436,22 +426,6 @@ static int radio_params_validate(const struct radio_params *params)
 	}
 
 	return 0;
-}
-
-static void restore_adv_params(struct radio_params *params, const struct radio_params *old_params)
-{
-	params->adv_interval_min = old_params->adv_interval_min;
-	params->adv_interval_max = old_params->adv_interval_max;
-	params->adv_interval_min_lowactivity = old_params->adv_interval_min_lowactivity;
-	params->adv_interval_max_lowactivity = old_params->adv_interval_max_lowactivity;
-}
-
-static void restore_scan_params(struct radio_params *params, const struct radio_params *old_params)
-{
-	params->scan_interval = old_params->scan_interval;
-	params->scan_interval_lowactivity = old_params->scan_interval_lowactivity;
-	params->scan_window = old_params->scan_window;
-	params->scan_window_lowactivity = old_params->scan_window_lowactivity;
 }
 
 /* Advertising is required. Scan failures are degraded mode and are exposed
