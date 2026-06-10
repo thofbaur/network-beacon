@@ -216,6 +216,7 @@ static void send_networkdata(struct bt_conn *conn)
 		if (bytes_written > 0) {
 			if (nus_send_tracked(conn, buffer, bytes_written + 1)) {
 				printk("Failed to send NUS network data\n");
+				network_restore_contact(&buffer[1], bytes_written);
 				return;
 			}
 		}
