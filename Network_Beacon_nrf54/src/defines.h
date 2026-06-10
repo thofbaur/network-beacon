@@ -1,3 +1,6 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
 #define DSA_NUS_FLAG_TIME     0x01
 #define DSA_NUS_FLAG_DATA       0x02
 #define DSA_NUS_FLAG_VOLTAGE    0x03
@@ -27,3 +30,5 @@
 #define P_SCAN_WINDOW_LOWACTIVITY_MS	P_BASE_RADIO+6
 #define P_RADIO_RESET_PARAMS	P_BASE_RADIO+12
 #define P_SET_RAD_ACTIVE		P_BASE_RADIO+13
+
+#endif /* DEFINES_H */
