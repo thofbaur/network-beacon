@@ -3,7 +3,6 @@
 
 int radio_init(void);
 int radio_start(void);
-void radio_evaluate_command(struct net_buf_simple *buf);
 int radio_params_load(void);
 int radio_params_save(void);
 uint8_t lookup_device_id(const bt_addr_le_t *addr);

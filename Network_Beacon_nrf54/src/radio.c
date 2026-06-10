@@ -4,6 +4,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gap.h>
+#include <zephyr/kernel.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 //#include <bluetooth/scan.h>
@@ -42,6 +43,8 @@
 #define LOW_ACTIVITY				0
 #define INITIAL_MODE				HIGH_ACTIVITY  //1 High Activity, 0 Low Activity
 #define COMMAND_TARGET_BROADCAST	0xff
+#define COMMAND_DATA_MAX_LEN		31
+#define COMMAND_QUEUE_DEPTH		4
 #define RADIO_PARAMS_STORAGE_KEY	"dsa/radio"
 
 
@@ -93,6 +96,15 @@ struct name_check {
     	enum target_action action;
 	};
 
+struct command_msg {
+	uint8_t len;
+	uint8_t data[COMMAND_DATA_MAX_LEN];
+};
+
+static void command_work_handler(struct k_work *work);
+
+K_MSGQ_DEFINE(command_msgq, sizeof(struct command_msg), COMMAND_QUEUE_DEPTH, 1);
+static K_WORK_DEFINE(command_work, command_work_handler);
 
 bool radio_params_hardcoded=0;
 
@@ -264,34 +276,61 @@ static void evaluate_command_data(const uint8_t *data, uint8_t len)
 	}
 }
 
-void radio_evaluate_command(struct net_buf_simple *buf)
+static void radio_evaluate_command_data(const uint8_t *data, uint8_t len)
 {
 	uint8_t target;
-	uint8_t command_data[31];
-	struct net_buf_simple ad_temp;
-	struct net_buf_simple command_buf = {
-		.data = command_data,
-		.len = 0,
-		.size = sizeof(command_data),
-		.__buf = command_data,
-	};
 
-	net_buf_simple_clone(buf, &ad_temp);
-	bt_data_parse(&ad_temp, scan_extract_data, &command_buf);
-
-	if (command_buf.len < 1) {
+	if (len < 1) {
 		printk("Command data missing target byte\n");
 		return;
 	}
 
-	target = command_buf.data[0];
+	target = data[0];
 	if (target != mfg_data[ADV_POS_ID] && target != COMMAND_TARGET_BROADCAST) {
 		printk("Ignoring command for target 0x%02x, own id 0x%02x\n",
 		       target, mfg_data[ADV_POS_ID]);
 		return;
 	}
 
-	evaluate_command_data(&command_buf.data[1], command_buf.len - 1);
+	evaluate_command_data(&data[1], len - 1);
+}
+
+static void command_work_handler(struct k_work *work)
+{
+	struct command_msg msg;
+
+	ARG_UNUSED(work);
+
+	while (k_msgq_get(&command_msgq, &msg, K_NO_WAIT) == 0) {
+		radio_evaluate_command_data(msg.data, msg.len);
+	}
+}
+
+static void enqueue_command_from_ad(struct net_buf_simple *buf)
+{
+	int err;
+	struct command_msg msg = { 0 };
+	struct net_buf_simple ad_temp;
+	NET_BUF_SIMPLE_DEFINE(command_buf, COMMAND_DATA_MAX_LEN);
+
+	net_buf_simple_clone(buf, &ad_temp);
+	bt_data_parse(&ad_temp, scan_extract_data, &command_buf);
+
+	if (command_buf.len == 0) {
+		printk("Command advertisement has no manufacturer data\n");
+		return;
+	}
+
+	msg.len = command_buf.len;
+	memcpy(msg.data, command_buf.data, msg.len);
+
+	err = k_msgq_put(&command_msgq, &msg, K_NO_WAIT);
+	if (err) {
+		printk("Command queue full, dropping command (err %d)\n", err);
+		return;
+	}
+
+	k_work_submit(&command_work);
 }
 
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
@@ -314,7 +353,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 			break;
 
 		case ACTION_DSZ:
-			radio_evaluate_command(buf); 
+			enqueue_command_from_ad(buf);
 			break;
 		default:
 			break;
