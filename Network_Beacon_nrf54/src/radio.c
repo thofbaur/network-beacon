@@ -119,6 +119,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *scan_params, struct bt
 static int radio_params_validate(const struct radio_params *params);
 static void restore_adv_params(struct radio_params *params, const struct radio_params *old_params);
 static void restore_scan_params(struct radio_params *params, const struct radio_params *old_params);
+static int scan_init(void);
 
 
 
@@ -237,6 +238,7 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 			if (update_errors & BLE_UPDATE_SCAN_ERROR) {
 				restore_scan_params(&params_radio, &old_params_radio);
 			}
+			params_radio.mode = old_params_radio.mode;
 
 			set_ble_params(&params_radio);
 			update_errors = update_ble_params(&scan_params, &adv_params);
@@ -485,7 +487,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	return errors;
 }
 
-void scan_init(void)
+static int scan_init(void)
 {
     int err;
 
@@ -495,9 +497,11 @@ void scan_init(void)
     	err = bt_le_filter_accept_list_add(&known_device_table[i].addr);
 		if (err) {
     	    printk("Failed to add to filter list (err %d)\n", err);
-		return;
+			return err;
     }
 		}
+
+	return 0;
 }
 
 void adv_init(void)
@@ -597,7 +601,12 @@ int radio_init(void)
 			set_radio_params_init();
 		}
 	}
-	scan_init();
+	err = scan_init();
+	if (err) {
+		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+	} else {
+		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, false);
+	}
 	adv_init();
 	return 0;
 }
