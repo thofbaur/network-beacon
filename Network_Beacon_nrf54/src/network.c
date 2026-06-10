@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 
 #include "defines.h"
@@ -44,6 +45,9 @@ typedef struct {
 static contact_entry	data_array[LENGTH_DATA_BUFFER]; // ID 1 Byte; time 3 Byte; RSSI 1 Byte
 static uint16_t idx_read = 0;
 static uint16_t idx_write = 0;
+static uint16_t contact_count = 0;
+static K_MUTEX_DEFINE(contact_lock);
+
 static void contact_time_put(uint8_t time[3], uint32_t uptime_s)
 {
 	time[0] = (uptime_s >> 16) & 0xff;
@@ -127,51 +131,43 @@ static bool scan_extract_id(struct bt_data *data, void *user_data)
     return true;
 }
 
+static uint8_t contact_status_from_count(uint16_t number_dataset)
+{
+	if (number_dataset > DATA_LEVEL_7) {
+		return 7 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_6) {
+		return 6 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_5) {
+		return 5 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_4) {
+		return 4 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_3) {
+		return 3 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_2) {
+		return 2 << P_SHIFT_STATUS_DATA;
+	}
+	if (number_dataset > DATA_LEVEL_1) {
+		return 1 << P_SHIFT_STATUS_DATA;
+	}
+
+	return 0;
+}
+
 void network_update_tag(void)
 {
-	static uint16_t number_dataset = 0;
-	static uint8_t status_data = 0;
+	uint16_t number_dataset;
+	uint8_t status_data;
 
-	if(idx_write >= idx_read)
-	{
-		number_dataset = idx_write-idx_read;
-	}
-	else
-	{
-		number_dataset = LENGTH_DATA_BUFFER-idx_read+idx_write;
-	}
-	if(number_dataset >DATA_LEVEL_7)
-	{
-		status_data = 7 << P_SHIFT_STATUS_DATA;
-	}
-	else if (number_dataset >DATA_LEVEL_6)
-	{
-		status_data = 6 << P_SHIFT_STATUS_DATA;
-	}
-	else if( number_dataset >DATA_LEVEL_5)
-	{
-		status_data = 5 << P_SHIFT_STATUS_DATA;
-	}
-	else if( number_dataset >DATA_LEVEL_4)
-	{
-		status_data = 4 << P_SHIFT_STATUS_DATA;
-	}
-	else if( number_dataset >DATA_LEVEL_3)
-	{
-		status_data = 3 << P_SHIFT_STATUS_DATA;
-	}
-	else if( number_dataset >DATA_LEVEL_2)
-	{
-		status_data = 2 << P_SHIFT_STATUS_DATA;
-	}
-	else if( number_dataset >DATA_LEVEL_1)
-	{
-		status_data = 1 << P_SHIFT_STATUS_DATA;
-	}
-	else
-	{
-		status_data = 0;
-	}
+	k_mutex_lock(&contact_lock, K_FOREVER);
+	number_dataset = contact_count;
+	k_mutex_unlock(&contact_lock);
+
+	status_data = contact_status_from_count(number_dataset);
 	adv_update(ADV_POS_NETWORK_STATUS, status_data);
 }
 
@@ -186,37 +182,69 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
         net_buf_simple_clone(buf, &ad_temp);
 	    bt_data_parse(&ad_temp, scan_extract_id, &id);
 		
+		k_mutex_lock(&contact_lock, K_FOREVER);
 		data_array[idx_write].id = id;
 		contact_time_put(data_array[idx_write].time, (uint32_t)k_uptime_seconds());
 		data_array[idx_write].rssi = -rssi;
-        idx_write = (idx_write + 1) % LENGTH_DATA_BUFFER;
-        network_update_tag();
+		idx_write = (idx_write + 1) % LENGTH_DATA_BUFFER;
+
+		if (contact_count == LENGTH_DATA_BUFFER) {
+			idx_read = (idx_read + 1) % LENGTH_DATA_BUFFER;
+		} else {
+			contact_count++;
+		}
+		k_mutex_unlock(&contact_lock);
+
+		network_update_tag();
     }
 }
 
-uint8_t network_read_contact(uint8_t *buffer, uint16_t buffer_len)
+uint8_t network_peek_contact(uint8_t *buffer, uint16_t buffer_len)
 {
 	uint8_t bytes_written = 0;
+	uint16_t read_idx;
+	uint16_t entries_left;
 	
-	while (idx_read != idx_write)
+	k_mutex_lock(&contact_lock, K_FOREVER);
+	read_idx = idx_read;
+	entries_left = contact_count;
+
+	while (entries_left > 0)
 	{
 		if ((buffer_len - bytes_written) < CONTACT_ENTRY_SIZE) {
 			break;
 		}
 
-		buffer[bytes_written++] = data_array[idx_read].id;
-		buffer[bytes_written++] = data_array[idx_read].time[0];
-		buffer[bytes_written++] = data_array[idx_read].time[1];
-		buffer[bytes_written++] = data_array[idx_read].time[2];
-		buffer[bytes_written++] = data_array[idx_read].rssi;
+		buffer[bytes_written++] = data_array[read_idx].id;
+		buffer[bytes_written++] = data_array[read_idx].time[0];
+		buffer[bytes_written++] = data_array[read_idx].time[1];
+		buffer[bytes_written++] = data_array[read_idx].time[2];
+		buffer[bytes_written++] = data_array[read_idx].rssi;
 
-		idx_read = (idx_read + 1) % LENGTH_DATA_BUFFER;
+		read_idx = (read_idx + 1) % LENGTH_DATA_BUFFER;
+		entries_left--;
 	}
 
-	if (bytes_written > 0) {
-		network_update_tag();
-	}
-	
+	k_mutex_unlock(&contact_lock);
+
 	return bytes_written;
 }
 
+void network_commit_contact_read(uint8_t bytes_read)
+{
+	uint16_t entries_read = bytes_read / CONTACT_ENTRY_SIZE;
+
+	if (entries_read == 0) {
+		return;
+	}
+
+	k_mutex_lock(&contact_lock, K_FOREVER);
+	while (entries_read > 0 && contact_count > 0) {
+		idx_read = (idx_read + 1) % LENGTH_DATA_BUFFER;
+		contact_count--;
+		entries_read--;
+	}
+	k_mutex_unlock(&contact_lock);
+
+	network_update_tag();
+}

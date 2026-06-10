@@ -448,10 +448,10 @@ int radio_init(void)
   	int err;
 	int load_err;
 
-    err = bt_enable(NULL);
+	err = bt_enable(NULL);
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);
-		return 0;
+		return err;
 	}
 
 	printk("Bluetooth initialized\n");
@@ -484,17 +484,18 @@ int radio_start(void)
 				      NULL, 0);
 	if (err) {
 		printk("Advertising failed to start (err %d)\n", err);
-		return 0;
+		return err;
 	}
 
 	
 	err = bt_le_scan_start(&scan_params, scan_cb);
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
-		return 0;
+		
+		return err;
 	}
     
-    return err;
+    return 0;
 }
 
 
