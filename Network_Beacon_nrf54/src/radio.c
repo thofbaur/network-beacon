@@ -106,9 +106,9 @@ struct command_msg {
 };
 
 static void command_work_handler(struct k_work *work);
-static void radio_status_set(uint8_t mask, bool active);
+static int radio_status_set(uint8_t mask, bool active);
 static void radio_status_set_local(uint8_t mask, bool active);
-static int radio_status_publish(void);
+static void adv_prepare_status_data(void);
 
 K_MSGQ_DEFINE(command_msgq, sizeof(struct command_msg), COMMAND_QUEUE_DEPTH, 1);
 static K_WORK_DEFINE(command_work, command_work_handler);
@@ -490,7 +490,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	}
 
 	if (status_changed && !(errors & BLE_UPDATE_ADV_ERROR)) {
-		err = radio_status_publish();
+		err = adv_update();
 		if (err) {
 			errors |= BLE_UPDATE_ADV_ERROR;
 		}
@@ -523,23 +523,21 @@ void adv_init(void)
 	adv_params.secondary_max_skip = 0U;
 	adv_params.options = BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_IDENTITY;
 	mfg_data[ADV_POS_ID] = get_device_id();
+	adv_prepare_status_data();
 }
 
-int adv_update(uint8_t position, uint8_t value)
+int adv_update(void)
 {
 	int err;
-	uint8_t old_value;
+	uint8_t old_mfg_data[sizeof(mfg_data)];
 
-	if (position >= sizeof(mfg_data)) {
-		return -EINVAL;
-	}
+	memcpy(old_mfg_data, mfg_data, sizeof(mfg_data));
 
-	old_value = mfg_data[position];
-	mfg_data[position] = value;
+	adv_prepare_status_data();
 
 	err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
-		mfg_data[position] = old_value;
+		memcpy(mfg_data, old_mfg_data, sizeof(mfg_data));
 		printk("Advertising data update failed (err %d)\n", err);
 		return err;
 	}
@@ -547,24 +545,21 @@ int adv_update(uint8_t position, uint8_t value)
 	return 0;
 }
 
-static void radio_status_set(uint8_t mask, bool active)
+static int radio_status_set(uint8_t mask, bool active)
 {
 	radio_status_set_local(mask, active);
-	radio_status_publish();
+	return adv_update();
 }
 
 static void radio_status_set_local(uint8_t mask, bool active)
 {
-	if (active) {
-		mfg_data[ADV_POS_RADIO_STATUS] |= mask;
-	} else {
-		mfg_data[ADV_POS_RADIO_STATUS] &= ~mask;
-	}
+	device_set_radio_status_bit(mask, active);
 }
 
-static int radio_status_publish(void)
+static void adv_prepare_status_data(void)
 {
-	return adv_update(ADV_POS_RADIO_STATUS, mfg_data[ADV_POS_RADIO_STATUS]);
+	mfg_data[ADV_POS_RADIO_STATUS] = device_get_radio_status();
+	mfg_data[ADV_POS_NETWORK_STATUS] = device_get_network_status();
 }
 
 void set_ble_params(struct radio_params *params)

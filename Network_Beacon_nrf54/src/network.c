@@ -6,6 +6,7 @@
 #include <zephyr/sys/printk.h>
 
 #include "defines.h"
+#include "device.h"
 #include "network.h"
 #include "param_storage.h"
 #include "radio.h"
@@ -162,14 +163,13 @@ void network_update_tag(void)
 {
 	int err;
 	uint16_t number_dataset;
-	uint8_t status_data;
 
 	k_mutex_lock(&contact_lock, K_FOREVER);
 	number_dataset = contact_count;
 	k_mutex_unlock(&contact_lock);
 
-	status_data = contact_status_from_count(number_dataset);
-	err = adv_update(ADV_POS_NETWORK_STATUS, status_data);
+	device_set_network_status(contact_status_from_count(number_dataset));
+	err = adv_update();
 	if (err) {
 		printk("Failed to update network status advertising data (err %d)\n", err);
 	}

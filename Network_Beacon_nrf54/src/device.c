@@ -1,8 +1,13 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include "radio_ids.h"
+#include "device.h"
 
+struct device_status {
+    uint8_t radio;
+    uint8_t network;
+};
 
-
+static struct device_status status_device;
 
 uint8_t lookup_device_id(const bt_addr_le_t *addr)
 {
@@ -37,4 +42,33 @@ uint8_t get_device_id()
        	addrs[0].a.val[3], addrs[0].a.val[4], addrs[0].a.val[5]);
 	}
 	return device_id;
+}
+
+uint8_t device_get_radio_status(void)
+{
+    return status_device.radio;
+}
+
+void device_set_radio_status(uint8_t status)
+{
+    status_device.radio = status;
+}
+
+void device_set_radio_status_bit(uint8_t mask, bool active)
+{
+    if (active) {
+        status_device.radio |= mask;
+    } else {
+        status_device.radio &= ~mask;
+    }
+}
+
+uint8_t device_get_network_status(void)
+{
+    return status_device.network;
+}
+
+void device_set_network_status(uint8_t status)
+{
+    status_device.network = status;
 }
