@@ -46,8 +46,9 @@
 #define COMMAND_DATA_MAX_LEN		31
 #define COMMAND_QUEUE_DEPTH		4
 #define RADIO_PARAMS_STORAGE_KEY	"dsa/radio"
-#define RADIO_STATUS_SCAN_ERROR	BIT(0)
+#define RADIO_STATUS_SCAN_RUNTIME_ERROR	BIT(0)
 #define RADIO_STATUS_NUS_ERROR		BIT(1)
+#define RADIO_STATUS_SCAN_CONFIG_ERROR	BIT(2)
 #define BLE_UPDATE_ADV_ERROR		BIT(0)
 #define BLE_UPDATE_SCAN_ERROR		BIT(1)
 
@@ -467,7 +468,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	err = bt_le_scan_stop();
 	if (err && err != -EALREADY) {
 		printk("Scan stop before parameter update failed (err %d)\n", err);
-		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set_local(RADIO_STATUS_SCAN_RUNTIME_ERROR, true);
 		status_changed = true;
 		errors |= BLE_UPDATE_SCAN_ERROR;
 	}
@@ -481,11 +482,11 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	err = bt_le_scan_start(parameters_scan, scan_cb);
 	if (err && err != -EALREADY) {
 		printk("Scan parameter update failed (err %d)\n", err);
-		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set_local(RADIO_STATUS_SCAN_RUNTIME_ERROR, true);
 		status_changed = true;
 		errors |= BLE_UPDATE_SCAN_ERROR;
 	} else {
-		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, false);
+		radio_status_set_local(RADIO_STATUS_SCAN_RUNTIME_ERROR, false);
 		status_changed = true;
 	}
 
@@ -623,9 +624,9 @@ int radio_init(void)
 	}
 	err = scan_init();
 	if (err) {
-		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set_local(RADIO_STATUS_SCAN_CONFIG_ERROR, true);
 	} else {
-		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, false);
+		radio_status_set_local(RADIO_STATUS_SCAN_CONFIG_ERROR, false);
 	}
 	adv_init();
 	return 0;
@@ -648,11 +649,11 @@ int radio_start(void)
 	err = bt_le_scan_start(&scan_params, scan_cb);
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
-		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set(RADIO_STATUS_SCAN_RUNTIME_ERROR, true);
 		return 0;
 	}
 
-	radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
+	radio_status_set(RADIO_STATUS_SCAN_RUNTIME_ERROR, false);
 
 
     
