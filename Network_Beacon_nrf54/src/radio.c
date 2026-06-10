@@ -51,6 +51,7 @@
 #define RADIO_STATUS_SCAN_CONFIG_ERROR	BIT(2)
 #define BLE_UPDATE_ADV_ERROR		BIT(0)
 #define BLE_UPDATE_SCAN_ERROR		BIT(1)
+#define BLE_UPDATE_STATUS_ERROR		BIT(2)
 
 
 
@@ -230,7 +231,7 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 
 		set_ble_params(&params_radio);
 		update_errors = update_ble_params(&scan_params, &adv_params);
-		if (update_errors) {
+		if (update_errors & (BLE_UPDATE_ADV_ERROR | BLE_UPDATE_SCAN_ERROR)) {
 			printk("Radio parameter update had error flags 0x%02x, restoring failed parts\n",
 			       update_errors);
 
@@ -251,6 +252,9 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 				update_ble_params(&scan_params, &adv_params);
 				return;
 			}
+		}
+		if (update_errors & BLE_UPDATE_STATUS_ERROR) {
+			printk("Radio status advertising data update failed, keeping accepted parameters\n");
 		}
 
 		err = radio_params_save();
@@ -493,7 +497,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	if (status_changed && !(errors & BLE_UPDATE_ADV_ERROR)) {
 		err = adv_update();
 		if (err) {
-			errors |= BLE_UPDATE_ADV_ERROR;
+			errors |= BLE_UPDATE_STATUS_ERROR;
 		}
 	}
 
