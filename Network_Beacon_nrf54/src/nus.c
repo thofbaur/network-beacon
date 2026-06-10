@@ -19,6 +19,7 @@
 
 #define NUS_CONNECTION_TIMEOUT_MS 20000
 #define NUS_ATT_NOTIFY_HEADER_LEN 3
+#define NUS_MAX_PAYLOAD_LEN 244
 
 static struct bt_conn *current_conn;
 static bool nus_notifications_enabled;
@@ -189,8 +190,10 @@ static void send_uptime(struct bt_conn *conn)
 static void send_networkdata(struct bt_conn *conn)
 {
 	uint16_t max_payload = bt_gatt_get_mtu(conn);
+	uint16_t payload_len;
 	uint8_t bytes_written = 0;
 	uint16_t contact_payload_len;
+	uint8_t buffer[NUS_MAX_PAYLOAD_LEN];
 	
 	if (max_payload > NUS_ATT_NOTIFY_HEADER_LEN) {
 		max_payload -= NUS_ATT_NOTIFY_HEADER_LEN;
@@ -200,12 +203,12 @@ static void send_networkdata(struct bt_conn *conn)
 
 	printk("NUS max payload: %u bytes\n", max_payload);
 
-	if (max_payload <= 1) {
+	payload_len = MIN(max_payload, (uint16_t)sizeof(buffer));
+	if (payload_len <= 1) {
 		return;
 	}
 
-	uint8_t buffer[max_payload];
-	contact_payload_len = max_payload - 1;
+	contact_payload_len = payload_len - 1;
 	buffer[0] = DSA_NUS_FLAG_DATA;
 
 	do {
