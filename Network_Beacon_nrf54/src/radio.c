@@ -108,6 +108,7 @@ struct command_msg {
 static void command_work_handler(struct k_work *work);
 static void radio_status_set(uint8_t mask, bool active);
 static void radio_status_set_local(uint8_t mask, bool active);
+static int radio_status_publish(void);
 
 K_MSGQ_DEFINE(command_msgq, sizeof(struct command_msg), COMMAND_QUEUE_DEPTH, 1);
 static K_WORK_DEFINE(command_work, command_work_handler);
@@ -455,6 +456,7 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 {
 	int err;
 	uint8_t errors = 0;
+	bool status_changed = false;
 
 	err = bt_le_adv_stop();
 	if (err && err != -EALREADY) {
@@ -465,7 +467,8 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	err = bt_le_scan_stop();
 	if (err && err != -EALREADY) {
 		printk("Scan stop before parameter update failed (err %d)\n", err);
-		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+		status_changed = true;
 		errors |= BLE_UPDATE_SCAN_ERROR;
 	}
 
@@ -478,10 +481,19 @@ static uint8_t update_ble_params(struct bt_le_scan_param *parameters_scan, struc
 	err = bt_le_scan_start(parameters_scan, scan_cb);
 	if (err && err != -EALREADY) {
 		printk("Scan parameter update failed (err %d)\n", err);
-		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
+		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, true);
+		status_changed = true;
 		errors |= BLE_UPDATE_SCAN_ERROR;
 	} else {
-		radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
+		radio_status_set_local(RADIO_STATUS_SCAN_ERROR, false);
+		status_changed = true;
+	}
+
+	if (status_changed && !(errors & BLE_UPDATE_ADV_ERROR)) {
+		err = radio_status_publish();
+		if (err) {
+			errors |= BLE_UPDATE_ADV_ERROR;
+		}
 	}
 
 	return errors;
@@ -537,15 +549,8 @@ int adv_update(uint8_t position, uint8_t value)
 
 static void radio_status_set(uint8_t mask, bool active)
 {
-	uint8_t status = mfg_data[ADV_POS_RADIO_STATUS];
-
-	if (active) {
-		status |= mask;
-	} else {
-		status &= ~mask;
-	}
-
-	adv_update(ADV_POS_RADIO_STATUS, status);
+	radio_status_set_local(mask, active);
+	radio_status_publish();
 }
 
 static void radio_status_set_local(uint8_t mask, bool active)
@@ -555,6 +560,11 @@ static void radio_status_set_local(uint8_t mask, bool active)
 	} else {
 		mfg_data[ADV_POS_RADIO_STATUS] &= ~mask;
 	}
+}
+
+static int radio_status_publish(void)
+{
+	return adv_update(ADV_POS_RADIO_STATUS, mfg_data[ADV_POS_RADIO_STATUS]);
 }
 
 void set_ble_params(struct radio_params *params)
@@ -648,6 +658,7 @@ int radio_start(void)
 	}
 
 	radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
+
 
     
     return 0;
