@@ -8,6 +8,7 @@
 
 #include <zephyr/types.h>
 #include <stddef.h>
+#include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
 
@@ -15,6 +16,7 @@
 
 #include "radio.h"
 #include "network.h"
+#include "led.h"
 
 int main(void)
 {
@@ -22,6 +24,7 @@ int main(void)
 
 
 	printk("Starting DSA Network Beacon\n");
+	led_init();
 	network_init();
 	/* Initialize the Bluetooth Subsystem */
 	err = radio_init();
@@ -37,12 +40,6 @@ int main(void)
 		return err;
 	}
 
-	do {
-		k_sleep(K_MSEC(400));
-		//radio_update();
-		
-
-		
-	} while (1);
+	k_sleep(K_FOREVER);
 	return 0;
 }

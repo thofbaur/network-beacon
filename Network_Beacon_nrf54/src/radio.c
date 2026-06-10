@@ -15,6 +15,7 @@
 #include "radio.h"
 #include "nus.h"
 #include "device.h"
+#include "led.h"
 /* Radio Parameters
  *
  */
@@ -266,21 +267,6 @@ int radio_params_save(void)
 				  &params_radio, sizeof(params_radio));
 }
 
-static void main_apply_command(uint8_t parameter, uint16_t value)
-{
-	switch (parameter) {
-	case P_MAIN_LED_ACTIVE:
-		printk("Main LED command value %u not implemented\n", value);
-		break;
-	case P_MAIN_RESET_PARAMS:
-		printk("Main parameter reset command not implemented\n");
-		break;
-	default:
-		printk("Unknown main parameter 0x%02x value %u\n", parameter, value);
-		break;
-	}
-}
-
 static void evaluate_command_data(const uint8_t *data, uint8_t len)
 {
 	for (uint8_t offset = 0; offset + 2 < len; offset += 3) {
@@ -291,7 +277,7 @@ static void evaluate_command_data(const uint8_t *data, uint8_t len)
 
 		switch (parameter & P_BASE_MASK) {
 		case P_BASE_MAIN:
-			main_apply_command(parameter, value);
+			led_apply_command(parameter, value);
 			break;
 		case P_BASE_NETWORK:
 			network_apply_command(parameter, value);
