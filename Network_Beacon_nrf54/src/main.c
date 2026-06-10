@@ -32,7 +32,10 @@ int main(void)
 
 	/* Start advertising and scanning*/
 	err = radio_start();
-	
+	if (err) {
+		printk("Radio start failed (err %d)\n", err);
+		return err;
+	}
 
 	do {
 		k_sleep(K_MSEC(400));
