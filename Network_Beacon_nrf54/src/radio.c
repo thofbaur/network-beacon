@@ -513,24 +513,39 @@ void adv_init(void)
 	mfg_data[ADV_POS_ID] = get_device_id();
 }
 
-void adv_update(uint8_t position, uint8_t value)
+int adv_update(uint8_t position, uint8_t value)
 {
 	int err;
+	uint8_t old_value;
 
-	if (position < sizeof(mfg_data)) {
-		mfg_data[position] = value;
+	if (position >= sizeof(mfg_data)) {
+		return -EINVAL;
 	}
+
+	old_value = mfg_data[position];
+	mfg_data[position] = value;
 
 	err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
+		mfg_data[position] = old_value;
 		printk("Advertising data update failed (err %d)\n", err);
+		return err;
 	}
+
+	return 0;
 }
 
 static void radio_status_set(uint8_t mask, bool active)
 {
-	radio_status_set_local(mask, active);
-	adv_update(ADV_POS_RADIO_STATUS, mfg_data[ADV_POS_RADIO_STATUS]);
+	uint8_t status = mfg_data[ADV_POS_RADIO_STATUS];
+
+	if (active) {
+		status |= mask;
+	} else {
+		status &= ~mask;
+	}
+
+	adv_update(ADV_POS_RADIO_STATUS, status);
 }
 
 static void radio_status_set_local(uint8_t mask, bool active)
@@ -633,6 +648,7 @@ int radio_start(void)
 	}
 
 	radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
+
     
     return 0;
 }

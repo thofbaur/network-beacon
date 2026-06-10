@@ -160,6 +160,7 @@ static uint8_t contact_status_from_count(uint16_t number_dataset)
 
 void network_update_tag(void)
 {
+	int err;
 	uint16_t number_dataset;
 	uint8_t status_data;
 
@@ -168,7 +169,10 @@ void network_update_tag(void)
 	k_mutex_unlock(&contact_lock);
 
 	status_data = contact_status_from_count(number_dataset);
-	adv_update(ADV_POS_NETWORK_STATUS, status_data);
+	err = adv_update(ADV_POS_NETWORK_STATUS, status_data);
+	if (err) {
+		printk("Failed to update network status advertising data (err %d)\n", err);
+	}
 }
 
 void network_evaluate_contact(const bt_addr_le_t *addr, 
