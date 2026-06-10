@@ -47,6 +47,7 @@
 #define COMMAND_QUEUE_DEPTH		4
 #define RADIO_PARAMS_STORAGE_KEY	"dsa/radio"
 #define RADIO_STATUS_SCAN_ERROR	BIT(0)
+#define RADIO_STATUS_NUS_ERROR		BIT(1)
 
 
 
@@ -104,6 +105,7 @@ struct command_msg {
 
 static void command_work_handler(struct k_work *work);
 static void radio_status_set(uint8_t mask, bool active);
+static void radio_status_set_local(uint8_t mask, bool active);
 
 K_MSGQ_DEFINE(command_msgq, sizeof(struct command_msg), COMMAND_QUEUE_DEPTH, 1);
 static K_WORK_DEFINE(command_work, command_work_handler);
@@ -423,9 +425,7 @@ static int update_ble_params(struct bt_le_scan_param *parameters_scan, struct bt
 	err = bt_le_scan_stop();
 	if (err && err != -EALREADY) {
 		printk("Scan stop before parameter update failed (err %d)\n", err);
-		if (!first_err) {
-			first_err = err;
-		}
+		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
 	}
 
 	err = bt_le_adv_start(parameters_adv, ad, ARRAY_SIZE(ad), NULL, 0);
@@ -440,9 +440,6 @@ static int update_ble_params(struct bt_le_scan_param *parameters_scan, struct bt
 	if (err && err != -EALREADY) {
 		printk("Scan parameter update failed (err %d)\n", err);
 		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
-		if (!first_err) {
-			first_err = err;
-		}
 	} else {
 		radio_status_set(RADIO_STATUS_SCAN_ERROR, false);
 	}
@@ -490,15 +487,17 @@ void adv_update(uint8_t position, uint8_t value)
 
 static void radio_status_set(uint8_t mask, bool active)
 {
-	uint8_t status = mfg_data[ADV_POS_RADIO_STATUS];
+	radio_status_set_local(mask, active);
+	adv_update(ADV_POS_RADIO_STATUS, mfg_data[ADV_POS_RADIO_STATUS]);
+}
 
+static void radio_status_set_local(uint8_t mask, bool active)
+{
 	if (active) {
-		status |= mask;
+		mfg_data[ADV_POS_RADIO_STATUS] |= mask;
 	} else {
-		status &= ~mask;
+		mfg_data[ADV_POS_RADIO_STATUS] &= ~mask;
 	}
-
-	adv_update(ADV_POS_RADIO_STATUS, status);
 }
 
 void set_ble_params(struct radio_params *params)
@@ -541,10 +540,12 @@ int radio_init(void)
 
 	err = nus_service_init();
 	if (err) {
-		return err;
+		printk("NUS init failed (err %d), continuing without NUS\n", err);
+		radio_status_set_local(RADIO_STATUS_NUS_ERROR, true);
+	} else {
+		radio_status_set_local(RADIO_STATUS_NUS_ERROR, false);
+		printk("NUS initialized\n");
 	}
-
-	printk("NUS initialized\n");
 	set_radio_params_init();
 	load_err = radio_params_load();
 	if (load_err == -ENOENT) {
@@ -581,7 +582,7 @@ int radio_start(void)
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
 		radio_status_set(RADIO_STATUS_SCAN_ERROR, true);
-		return err;
+		return 0;
 	}
 
 	radio_status_set(RADIO_STATUS_SCAN_ERROR, false);

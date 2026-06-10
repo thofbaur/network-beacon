@@ -25,6 +25,11 @@ int main(void)
 	network_init();
 	/* Initialize the Bluetooth Subsystem */
 	err = radio_init();
+	if (err) {
+		printk("Radio initialization failed (err %d)\n", err);
+		return err;
+	}
+
 	/* Start advertising and scanning*/
 	err = radio_start();
 	
