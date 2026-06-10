@@ -203,52 +203,35 @@ void network_evaluate_contact(const bt_addr_le_t *addr,
     }
 }
 
-uint8_t network_peek_contact(uint8_t *buffer, uint16_t buffer_len)
+uint8_t network_read_contact(uint8_t *buffer, uint16_t buffer_len)
 {
 	uint8_t bytes_written = 0;
-	uint16_t read_idx;
-	uint16_t entries_left;
+	bool entries_removed = false;
 	
 	k_mutex_lock(&contact_lock, K_FOREVER);
-	read_idx = idx_read;
-	entries_left = contact_count;
 
-	while (entries_left > 0)
+	while (contact_count > 0)
 	{
 		if ((buffer_len - bytes_written) < CONTACT_ENTRY_SIZE) {
 			break;
 		}
 
-		buffer[bytes_written++] = data_array[read_idx].id;
-		buffer[bytes_written++] = data_array[read_idx].time[0];
-		buffer[bytes_written++] = data_array[read_idx].time[1];
-		buffer[bytes_written++] = data_array[read_idx].time[2];
-		buffer[bytes_written++] = data_array[read_idx].rssi;
+		buffer[bytes_written++] = data_array[idx_read].id;
+		buffer[bytes_written++] = data_array[idx_read].time[0];
+		buffer[bytes_written++] = data_array[idx_read].time[1];
+		buffer[bytes_written++] = data_array[idx_read].time[2];
+		buffer[bytes_written++] = data_array[idx_read].rssi;
 
-		read_idx = (read_idx + 1) % LENGTH_DATA_BUFFER;
-		entries_left--;
-	}
-
-	k_mutex_unlock(&contact_lock);
-
-	return bytes_written;
-}
-
-void network_commit_contact_read(uint8_t bytes_read)
-{
-	uint16_t entries_read = bytes_read / CONTACT_ENTRY_SIZE;
-
-	if (entries_read == 0) {
-		return;
-	}
-
-	k_mutex_lock(&contact_lock, K_FOREVER);
-	while (entries_read > 0 && contact_count > 0) {
 		idx_read = (idx_read + 1) % LENGTH_DATA_BUFFER;
 		contact_count--;
-		entries_read--;
+		entries_removed = true;
 	}
+
 	k_mutex_unlock(&contact_lock);
 
-	network_update_tag();
+	if (entries_removed) {
+		network_update_tag();
+	}
+
+	return bytes_written;
 }

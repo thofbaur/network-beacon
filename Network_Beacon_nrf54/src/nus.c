@@ -212,13 +212,12 @@ static void send_networkdata(struct bt_conn *conn)
 	buffer[0] = DSA_NUS_FLAG_DATA;
 
 	do {
-		bytes_written = network_peek_contact(&buffer[1], contact_payload_len);
+		bytes_written = network_read_contact(&buffer[1], contact_payload_len);
 		if (bytes_written > 0) {
 			if (nus_send_tracked(conn, buffer, bytes_written + 1)) {
 				printk("Failed to send NUS network data\n");
 				return;
 			}
-			network_commit_contact_read(bytes_written);
 		}
 	} while (bytes_written > 0);
 }
