@@ -551,10 +551,16 @@ int radio_init(void)
 		printk("No stored radio parameters, using defaults\n");
 	} else if (load_err) {
 		printk("Failed to load radio parameters (err %d), using defaults\n", load_err);
+	} else {
+		err = radio_params_validate(&params_radio);
+		if (err) {
+			printk("Stored radio parameters invalid (err %d), using defaults\n", err);
+			set_radio_params_init();
+		}
 	}
 	scan_init();
 	adv_init();
-	return err;
+	return 0;
 }
 
 int radio_start(void)
