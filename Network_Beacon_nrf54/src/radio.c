@@ -71,8 +71,8 @@ struct radio_params {
 
 static struct radio_params params_radio;
 
-struct bt_le_scan_param scan_param;
-struct bt_le_adv_param adv_params;
+static struct bt_le_scan_param scan_params;
+static struct bt_le_adv_param adv_params;
 
 enum target_action {
     ACTION_NONE = 0,
@@ -108,10 +108,8 @@ static K_WORK_DEFINE(command_work, command_work_handler);
 
 bool radio_params_hardcoded=0;
 
-void set_ble_params(uint8_t mode);
-static void update_ble_params(void);
-
-
+void set_ble_params(struct radio_params *params);
+static void update_ble_params(struct bt_le_scan_param *scan_params, struct bt_le_adv_param *adv_params);
 
 
 
@@ -214,8 +212,8 @@ static void radio_apply_command(uint8_t parameter, uint16_t value)
 		if (err) {
 			printk("Failed to save radio parameters (err %d)\n", err);
 		}
-		set_ble_params(params_radio.mode);
-		update_ble_params();
+		set_ble_params(&params_radio);
+		update_ble_params(&scan_params, &adv_params);
 	}
 }
 
@@ -362,7 +360,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     /* Do follow-up logic here, not inside name_check_cb */
 }
 
-static void update_ble_params(void)
+static void update_ble_params(struct bt_le_scan_param *parameters_scan, struct bt_le_adv_param *parameters_adv)
 {
 	int err;
 
@@ -376,12 +374,12 @@ static void update_ble_params(void)
 		printk("Scan stop before parameter update failed (err %d)\n", err);
 	}
 
-	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad), NULL, 0);
+	err = bt_le_adv_start(parameters_adv, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err && err != -EALREADY) {
 		printk("Advertising parameter update failed (err %d)\n", err);
 	}
 
-	err = bt_le_scan_start(&scan_param, scan_cb);
+	err = bt_le_scan_start(parameters_scan, scan_cb);
 	if (err && err != -EALREADY) {
 		printk("Scan parameter update failed (err %d)\n", err);
 	}
@@ -411,7 +409,7 @@ void adv_init(void)
 	mfg_data[ADV_POS_ID] = get_device_id();
 }
 
-void adv_update(int8_t position, uint8_t value)
+void adv_update(uint8_t position, uint8_t value)
 {
 	if (position < sizeof(mfg_data)) {
 		mfg_data[position] = value;
@@ -420,26 +418,26 @@ void adv_update(int8_t position, uint8_t value)
 	bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
 }
 
-void set_ble_params(uint8_t mode)
+void set_ble_params(struct radio_params *params)
 {
-	scan_param.type = BT_LE_SCAN_TYPE_PASSIVE;
-	scan_param.options = BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
-	switch(mode)
+	scan_params.type = BT_LE_SCAN_TYPE_PASSIVE;
+	scan_params.options = BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
+	switch(params->mode)
 			{
 				case LOW_ACTIVITY:
 				{
-				    adv_params.interval_min   = params_radio.adv_interval_min_lowactivity;
-					adv_params.interval_max   = params_radio.adv_interval_max_lowactivity;
-				    scan_param.interval = params_radio.scan_interval_lowactivity;
-				    scan_param.window = params_radio.scan_window_lowactivity;
+				    adv_params.interval_min   = params->adv_interval_min_lowactivity;
+					adv_params.interval_max   = params->adv_interval_max_lowactivity;
+				    scan_params.interval = params->scan_interval_lowactivity;
+				    scan_params.window = params->scan_window_lowactivity;
 					break;
 				}
 				case HIGH_ACTIVITY:
 				{
-					adv_params.interval_min   = params_radio.adv_interval_min;
-					adv_params.interval_max   = params_radio.adv_interval_max;
-					scan_param.interval = params_radio.scan_interval;
-					scan_param.window = params_radio.scan_window;
+					adv_params.interval_min   = params->adv_interval_min;
+					adv_params.interval_max   = params->adv_interval_max;
+					scan_params.interval = params->scan_interval;
+					scan_params.window = params->scan_window;
 				    break;
 				}
 			}
@@ -480,7 +478,7 @@ int radio_start(void)
 {
     int err;
 
-	set_ble_params(params_radio.mode);
+	set_ble_params(&params_radio);
 	/* Start advertising */
 	err = bt_le_adv_start(&adv_params, ad, ARRAY_SIZE(ad),
 				      NULL, 0);
@@ -490,7 +488,7 @@ int radio_start(void)
 	}
 
 	
-	err = bt_le_scan_start(&scan_param, scan_cb);
+	err = bt_le_scan_start(&scan_params, scan_cb);
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
 		return 0;
