@@ -19,7 +19,7 @@
 
 #define NUS_CONNECTION_TIMEOUT_MS 20000
 #define NUS_ATT_NOTIFY_HEADER_LEN 3
-#define NUS_MAX_PAYLOAD_LEN 244
+#define NUS_MAX_PAYLOAD_LEN (CONFIG_BT_L2CAP_TX_MTU - NUS_ATT_NOTIFY_HEADER_LEN)
 
 static struct bt_conn *current_conn;
 static bool nus_notifications_enabled;
@@ -121,7 +121,7 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t att_err,
 	printk(", negotiated MTU %u\n", bt_gatt_get_mtu(conn));
 }
 
-static void request_throughput_params(struct bt_conn *conn)
+static void request_connection_params(struct bt_conn *conn)
 {
 	int err;
 	const struct bt_conn_le_phy_param phy = {
@@ -139,7 +139,7 @@ static void request_throughput_params(struct bt_conn *conn)
 		.timeout = BT_GAP_MS_TO_CONN_TIMEOUT(4000),
 	};
 
-	printk("Requesting high-throughput connection parameters\n");
+	printk("Requesting maximum NUS TX connection parameters\n");
 	printk("Requested PHY: TX=2M RX=2M\n");
 	printk("Requested data length: tx_max_len=%u tx_max_time=%u\n",
 	       data_len.tx_max_len, data_len.tx_max_time);
@@ -303,7 +303,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 	current_conn = bt_conn_ref(conn);
 	refresh_connection_timeout();
-	request_throughput_params(conn);
+	request_connection_params(conn);
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
