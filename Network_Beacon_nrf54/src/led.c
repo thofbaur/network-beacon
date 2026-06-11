@@ -13,8 +13,8 @@
 #include "param_storage.h"
 
 #define LED_PARAMS_STORAGE_KEY "dsa/main"
-#define LED_BLINK_INTERVAL_MS 10000 // TODO  increase for production
-#define LED_BLINK_ON_MS 100
+#define LED_BLINK_INTERVAL_MS 20000 // TODO  increase for production
+#define LED_BLINK_ON_MS 30
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(green_led), okay)
 #define LED_NODE DT_ALIAS(green_led)
