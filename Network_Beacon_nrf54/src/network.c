@@ -30,7 +30,7 @@ typedef struct {
 
 
 
-#define LENGTH_DATA_BUFFER 10
+#define LENGTH_DATA_BUFFER 26000
 
 #define NETWORK_LIMIT_RSSI		80 // approx. 1-2m distance
 
