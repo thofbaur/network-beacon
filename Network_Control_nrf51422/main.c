@@ -32,6 +32,40 @@ static ble_gap_adv_params_t m_adv_params;
  *
  *
  */
+
+#define CENTRAL_DEVICE_NAME      	"DSZ"
+#define LENGTH_CENTRAL_DEVICE_NAME 	3
+
+#define P_NULL				0
+// Param_Base_Mask = 0xE0 -> Possible Values: 000 ... 111 << 5
+#define P_BASE_MASK			0xE0
+#define P_BASE_MAIN			0x20
+#define P_BASE_NETWORK		0x60
+#define P_BASE_RADIO		0x80
+
+
+
+
+// Defines for Main Parameters should be in one block
+#define P_MAIN_LED_ACTIVE       P_BASE_MAIN+1
+#define P_MAIN_RESET_PARAMS		P_BASE_MAIN+12
+
+// Defines for Network Parameters should be in one block
+#define P_RSSI_NETWORK		    P_BASE_NETWORK+4
+#define P_NETWORK_RESET_PARAMS 	P_BASE_NETWORK+12
+#define P_TRACKING_ACTIVE 	    P_BASE_NETWORK+13
+
+// Defines for Radio Parameters should be in one block
+#define P_ADV_INTERVAL_MS			P_BASE_RADIO+1
+#define P_ADV_INTERVAL_LOWACTIVITY_MS	P_BASE_RADIO+2
+#define P_SCAN_INTERVAL_MS			P_BASE_RADIO+3
+#define P_SCAN_INTERVAL_LOWACTIVITY_MS	P_BASE_RADIO+4
+#define P_SCAN_WINDOW_MS			P_BASE_RADIO+5
+#define P_SCAN_WINDOW_LOWACTIVITY_MS	P_BASE_RADIO+6
+#define P_RADIO_RESET_PARAMS	P_BASE_RADIO+12
+#define P_SET_RAD_ACTIVE		P_BASE_RADIO+13
+
+
 // Set Target beacon
 #define TARGET	0xFF    // 0xFF for all Beacons, or ID  (in Hex) for dedicated beacon
 
@@ -47,12 +81,12 @@ static ble_gap_adv_params_t m_adv_params;
 #define TIME_NETZ_FLUSH	240
 #define NETZ_RSSI		80
 
-#define R_ADV_INTERVAL	600
-#define R_ADV_INTERVAL_PASSIVE	5000
-#define R_SCAN_INTERVAL	1000
-#define R_SCAN_INTERVAL_PASSIVE	10000
-#define R_SCAN_WINDOW		300
-#define R_SCAN_WINDOW_PASSIVE	200
+#define R_ADV_INTERVAL_MS	400
+#define R_ADV_INTERVAL_LOWACTIVITY_MS	5000000
+#define R_SCAN_INTERVAL_MS	1000000
+#define R_SCAN_INTERVAL_LOWACTIVITY_MS	10000000
+#define R_SCAN_WINDOW_MS		300000
+#define R_SCAN_WINDOW_LOWACTIVITY_MS	200000
 
 
 
@@ -63,31 +97,31 @@ static uint8_t raw_advdata[30] = {
 //		P_BOOTLOADER		, 1														, 0,
 //		P_SET_BEACON_MODE	, 0														, 0,  // Set first param to 1 or 0
 
-		P_TIME_INFECT		, ((TIME_INFECT >>8 ) & 0xFF)							, ((TIME_INFECT ) & 0xFF),
-//		P_TIME_HEAL			, ((TIME_HEAL >>8 ) & 0xFF)							, ((TIME_HEAL ) & 0xFF),
-		P_TIME_RECOVER		, ((TIME_RECOVER >>(8+SHIFT_P_TIME_RECOVER)) & 0xFF)	, ((TIME_RECOVER >> SHIFT_P_TIME_RECOVER) & 0xFF),
-		P_TIME_SUSCEPT		, ((TIME_SUSCEPT >>(8+SHIFT_P_TIME_SUSCEPT)) & 0xFF)	, ((TIME_SUSCEPT >> SHIFT_P_TIME_SUSCEPT) & 0xFF),
-//		P_TIME_EXPOSED_ALT		, ((TIME_EXPOSED_ALT >>(8+SHIFT_P_TIME_EXPOSED_ALT)) & 0xFF)	, ((TIME_EXPOSED_ALT >> SHIFT_P_TIME_EXPOSED_ALT) & 0xFF),
-//		P_CHANGE_STATUS		, STATUS_I												, 0, // Set first param die desired status
-//		P_SET_INF_ACTIVE	, 1				    									, 0, // Set first param to 1 or 0
-//		P_INF_RESET_PARAMS	, 0														, 0,
-		P_INF_REV			, INF_REV												, 0,
-//		P_SHOW_STATUS		, 1														, 0,  // Set first param to 1 or 0
-//		P_RESET_INFECT		, 1														, 0,
-//      P_RSSI_INFECT           , INF_RSSI												, 0,    
+// 		P_TIME_INFECT		, ((TIME_INFECT >>8 ) & 0xFF)							, ((TIME_INFECT ) & 0xFF),
+// //		P_TIME_HEAL			, ((TIME_HEAL >>8 ) & 0xFF)							, ((TIME_HEAL ) & 0xFF),
+// 		P_TIME_RECOVER		, ((TIME_RECOVER >>(8+SHIFT_P_TIME_RECOVER)) & 0xFF)	, ((TIME_RECOVER >> SHIFT_P_TIME_RECOVER) & 0xFF),
+// 		P_TIME_SUSCEPT		, ((TIME_SUSCEPT >>(8+SHIFT_P_TIME_SUSCEPT)) & 0xFF)	, ((TIME_SUSCEPT >> SHIFT_P_TIME_SUSCEPT) & 0xFF),
+// //		P_TIME_EXPOSED_ALT		, ((TIME_EXPOSED_ALT >>(8+SHIFT_P_TIME_EXPOSED_ALT)) & 0xFF)	, ((TIME_EXPOSED_ALT >> SHIFT_P_TIME_EXPOSED_ALT) & 0xFF),
+// //		P_CHANGE_STATUS		, STATUS_I												, 0, // Set first param die desired status
+// //		P_SET_INF_ACTIVE	, 1				    									, 0, // Set first param to 1 or 0
+// //		P_INF_RESET_PARAMS	, 0														, 0,
+// 		P_INF_REV			, INF_REV												, 0,
+// //		P_SHOW_STATUS		, 1														, 0,  // Set first param to 1 or 0
+// //		P_RESET_INFECT		, 1														, 0,
+// //      P_RSSI_INFECT           , INF_RSSI												, 0,    
 
 //		P_TIME_FLUSH		, ((TIME_NETZ_FLUSH>>8) & 0xFF) 						, (TIME_NETZ_FLUSH & 0xFF),
 //		P_TIME_NETWORK		, ((TIME_NETWORK>>8)&0xFF)								, (TIME_NETWORK & 0xFF),
 //		P_NET_RESET_PARAMS	, 0														, 0,
 //		P_TRACKING_ACTIVE	, 0														, 0, // Set first param to 1 or 0
 
-//		P_ADV_INTERVAL		, ((R_ADV_INTERVAL  >>8)& 0xFF)							, ( R_ADV_INTERVAL & 0xFF),
-//		P_ADV_INTERVAL_PASSIVE , (( R_ADV_INTERVAL_PASSIVE >>8)& 0xFF)				, (R_ADV_INTERVAL_PASSIVE  & 0xFF),
-//		P_SCAN_INTERVAL		, (( R_SCAN_INTERVAL >>8)& 0xFF)							, (R_SCAN_INTERVAL  & 0xFF),
-//		P_SCAN_INTERVAL_PASSIVE	, (( R_SCAN_INTERVAL_PASSIVE >>8)& 0xFF)				, (R_SCAN_INTERVAL_PASSIVE  & 0xFF),
-//		P_SCAN_WINDOW		, (( R_SCAN_WINDOW >>8)& 0xFF)							, (  R_SCAN_WINDOW& 0xFF),
-//		P_SCAN_WINDOW_PASSIVE	, ((R_SCAN_WINDOW_PASSIVE  >>8)& 0xFF)				, (R_SCAN_WINDOW_PASSIVE  & 0xFF),
-//		P_RADIO_RESET_PARAMS	, 0													, 0,  // Set first param to 1 or 0
+//		P_ADV_INTERVAL_MS		    , (( R_ADV_INTERVAL_MS >>8)& 0xFF)							, (R_ADV_INTERVAL_MS  & 0xFF),
+//		P_ADV_INTERVAL_LOWACTIVITY_MS , (( R_ADV_INTERVAL_LOWACTIVITY_MS >>8)& 0xFF)				, (R_ADV_INTERVAL_LOWACTIVITY_MS  & 0xFF),
+//		P_SCAN_INTERVAL_MS		, (( R_SCAN_INTERVAL >>8)& 0xFF)							, (R_SCAN_INTERVAL  & 0xFF),
+//		P_SCAN_INTERVAL_LOWACTIVITY_MS	, (( R_SCAN_INTERVAL_LOWACTIVITY_MS >>8)& 0xFF)				, (R_SCAN_INTERVAL_LOWACTIVITY_MS  & 0xFF),
+//		P_SCAN_WINDOW_MS		, (( R_SCAN_WINDOW >>8)& 0xFF)							, (  R_SCAN_WINDOW& 0xFF),
+//		P_SCAN_WINDOW_LOWACTIVITY_MS	, ((R_SCAN_WINDOW_LOWACTIVITY_MS  >>8)& 0xFF)				, (R_SCAN_WINDOW_LOWACTIVITY_MS  & 0xFF),
+		P_RADIO_RESET_PARAMS	, 0	, 1,  // Set first param to 1 or 0
 
 };
 
@@ -100,7 +134,7 @@ static void gap_params_init(void)  //DONE
 
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
     
-    err_code = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)PERIPHERAL_DEVICE_NAME, strlen(PERIPHERAL_DEVICE_NAME));
+    err_code = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)CENTRAL_DEVICE_NAME, strlen(CENTRAL_DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
 
     err_code = sd_ble_gap_tx_power_set(TX_POWER);
